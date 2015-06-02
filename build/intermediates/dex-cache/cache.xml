@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="/home/simone/Università/Unisa/Secondo anno/GIS/WFSClient/libs/jts-1.8.jar"
+        jumboMode="false"
+        revision="19.1.0"
+        sha1="6ad868f7fe14ef6646d584072e33247eb95f9d13">
+        <dex dex="/home/simone/Università/Unisa/Secondo anno/GIS/WFSClient/build/intermediates/pre-dexed/debug/jts-1.8-b259f27e2e3a179968cba94ef15a91a9595dda1a.jar" />
+    </item>
+    <item
+        jar="/home/simone/Università/Unisa/Secondo anno/GIS/WFSClient/libs/android-support-v4.jar"
+        jumboMode="false"
+        revision="19.1.0"
+        sha1="5896b0a4e377ac4242eb2bc785220c1c4fc052f4">
+        <dex dex="/home/simone/Università/Unisa/Secondo anno/GIS/WFSClient/build/intermediates/pre-dexed/debug/android-support-v4-1354d957760473304c4a7d1764fd15f4f944482c.jar" />
+    </item>
+
+</items>

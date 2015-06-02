@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WFSClient</string>
+    <string name="action_settings">Settings</string>
+    <string name="downloadButton">Download</string>
+    <string name="disegnaButton">Draw</string>
+    <string name="xml_error">Errore nel foglio XML</string>
+    <string name="connection_error">Errore di connessione</string>
+</resources>
