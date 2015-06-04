@@ -42,7 +42,7 @@ android {
         release.setRoot('build-types/release')
     }
     dexOptions {
-        incremental true
+        incremental false
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_6
