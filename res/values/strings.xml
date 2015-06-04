@@ -6,4 +6,6 @@
     <string name="disegnaButton">Draw</string>
     <string name="xml_error">Errore nel foglio XML</string>
     <string name="connection_error">Errore di connessione</string>
+    <string name="action_buffer">Buffer</string>
+    <string name="action_intersection">Intersection</string>
 </resources>

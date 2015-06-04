@@ -3,11 +3,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import org.xmlpull.v1.XmlPullParserException;
+
+import com.example.wfsclient.layers.Layer;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
+
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -16,8 +23,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.webkit.WebView;
+import android.widget.EditText;
 import android.widget.Toast;
 
 public class WFSClientMainActivity extends Activity {
@@ -28,20 +36,24 @@ public class WFSClientMainActivity extends Activity {
 	private boolean mobileConnected=false;
 	private LinkedList<Object> listaOggetti=new LinkedList<Object>();
 	private boolean disegna=false;
+    private List<Layer> currentLayers;
 
 	//WFS NSIDC
+    //GOOD BUFFER: 10000
 	private String defaultwfs = "http://nsidc.org/cgi-bin/atlas_north?service=WFS&request=GetCapabilities";
 	//Piemonte
 	//private String defaultwfs = "http://geomap.reteunitaria.piemonte.it/ws/gsareprot/rp-01/areeprotwfs/wfs_gsareprot_1?service=WFS&request=getCapabilities";
 	//Sardegna
 	//private String defaultwfs = "http://webgis.regione.sardegna.it/geoserver/wfs?service=WFS&request=GetCapabilities";
-	
+
+    String featureName = null;
+
 	private static String wfsVersion = "1.1.0";
 	private URL serviceURL = null;
 	private List<String> feature;//l'index 0 contiene l'ind del wfs
 	private String request="";
 	private boolean requestBoolean=false;
-	
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -83,7 +95,7 @@ public class WFSClientMainActivity extends Activity {
 			// AsyncTask subclass
 			if(!requestBoolean)
 				new ConnectToWFS().execute(defaultwfs);
-			else 
+			else
 				new DownloadXmlTask().execute(request);
 		} else {
 			showErrorPage();
@@ -103,7 +115,7 @@ public class WFSClientMainActivity extends Activity {
 	}
 	/**
 	 * Classe asincrona per la connesione al WFS
-	 * 
+	 *
 	 */
 	private class ConnectToWFS extends AsyncTask <String,Void,String>{
 
@@ -116,7 +128,7 @@ public class WFSClientMainActivity extends Activity {
 				return getResources().getString(R.string.xml_error);
 			}
 		}
-		
+
 		protected void onPostExecute(String result) {
 			request=feature.get(0)+"service=WFS&version="+wfsVersion+"&request=GetFeature&typeName="+feature.get(1);
 			LOGGER.info("REQUEST 1 " + feature.toString());
@@ -144,7 +156,7 @@ public class WFSClientMainActivity extends Activity {
 		//Verr� eseguito al completamento di loadXmlFronNetwork
 		//per mostare all�utente il file scaricato.
 		protected void onPostExecute(String result) {
-			setContentView(R.layout.activity_wfsclient_main);	
+			setContentView(R.layout.activity_wfsclient_main);
 				try {
 					LOGGER.info("INVOCO LA VIEW");
 					disegnaOnView(listaOggetti);
@@ -154,10 +166,10 @@ public class WFSClientMainActivity extends Activity {
 			}
 
 	}
-	
+
 	/**Effettua il parser del capabilitie document utilizzando la classe ParseCapabilities */
 	private String loadCapabilitiDocument(String urlString) throws XmlPullParserException, IOException{
-		
+
 		InputStream stream = null;
 		String result ="";
 		//aggiungo la versione del wfs all'url
@@ -175,13 +187,13 @@ public class WFSClientMainActivity extends Activity {
 		}
 		return result;
 	}
-	
+
 	/**Scarica il file gml dall'url*/
 	private String loadXmlFromNetwork(String urlString) throws XmlPullParserException, IOException {
-		
+
 		InputStream stream = null;
 		String result ="";
-		
+
 		try{
 			stream=downloadUrl(urlString);
 			if(!disegna)
@@ -217,11 +229,74 @@ public class WFSClientMainActivity extends Activity {
 		disegna=true;
 		startConnection();
 	}
-	
+
 	/**Invoca la View per disegnare la Feature*/
 	public void disegnaOnView(LinkedList<Object> l) throws ParseException{
-		setContentView(new DrawView(this,l));
+        Layer standard = new Layer();
+        for (Object o : l)
+            if (o instanceof Geometry)
+                standard.addGeometry((Geometry)o);
+        List<Layer> layers = new ArrayList<Layer>();
+        layers.add(standard);
+
+        this.currentLayers = layers;
+		setContentView(new DrawView(this, layers));
 	}
 
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (this.currentLayers == null)
+            return false;
+
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        final EditText rangeInput = new EditText(this);
+
+        alert.setView(rangeInput);
+
+        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {}
+        });
+
+        final Layer layer = this.currentLayers.get(0);
+
+        switch (item.getItemId()) {
+            case R.id.action_Buffer:
+                alert.setTitle("Buffering");
+                alert.setMessage("Which geometries ids do you want to buffer (input: X-Y)\n" +
+                        "Max: " + layer.getGeometries().size());
+
+                alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        String text = rangeInput.getText().toString();
+                        String[] parts = text.split("\\-");
+                        int from = Integer.parseInt(parts[0]);
+                        int to = Integer.parseInt(parts[1]);
+                        layer.addGeometry(layer.applyBuffers(layer.getGeometries().subList(from, to), 20000));
+                    }
+                });
+
+                alert.show();
+                return true;
+            case R.id.action_Intersection:
+                alert.setTitle("Intersection");
+                alert.setMessage("Which geometries ids do you want to intersect (input: X-Y).\n" +
+                        "Max: " + layer.getGeometries().size());
+
+                alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        String text = rangeInput.getText().toString();
+                        String[] parts = text.split("\\-");
+                        int from = Integer.parseInt(parts[0]);
+                        int to = Integer.parseInt(parts[1]);
+                        layer.addGeometry(layer.applyIntersection(layer.getGeometries().subList(from, to)));
+                    }
+                });
+
+                alert.show();
+                return true;
+            default:
+                return false;
+        }
+    }
 }

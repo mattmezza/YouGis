@@ -2,8 +2,12 @@ package com.example.wfsclient;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Logger;
+
+import com.example.wfsclient.layers.Layer;
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiPoint;
@@ -18,29 +22,43 @@ import android.text.TextPaint;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
-import android.text.TextPaint;
 
 public class DrawView extends View {
-	
+
 	private final static Logger LOGGER = Logger.getLogger(DrawView.class .getName());
-	private LinkedList lista;
+	private List<Layer> lista;
 
 	private ScaleGestureDetector mScaleDetector;
 	private float mScaleFactor = 0.0002f;
-	
+
 	private float mLastTouchX;
 	private float mLastTouchY;
 
 	private float mPosX;
 	private float mPosY;
-	
+
 	Paint paint = new Paint();
 	Paint paintTesto = new Paint();
 
-	public DrawView(Context context,LinkedList l) {
+	public DrawView(Context context,List<Layer> layers) {
 		super(context);
-		lista=l;
-		mScaleDetector = new ScaleGestureDetector(context, new ScaleListener());
+
+        mScaleDetector = new ScaleGestureDetector(context, new ScaleListener());
+
+        lista = layers;
+        /*
+        Geometry buffer1 = this.applyBuffers(lista.get(166), 30000);
+        Geometry buffer2 = this.applyBuffers(lista, 30000);
+
+        //lista.add(buffer1);
+        lista.add(buffer2);
+
+        //List<Geometry> toIntersect = new ArrayList<Geometry>();
+        //toIntersect.add(buffer1);
+        //toIntersect.add(buffer2);
+
+        //lista.add(this.applyIntersection(toIntersect));
+        */
 	}
 
 	@Override
@@ -54,7 +72,7 @@ public class DrawView extends View {
 			mLastTouchY = y;
 			break;
 		}
-		
+
 		case MotionEvent.ACTION_MOVE: {
 			final float x = ev.getX();
 			final float y = ev.getY();
@@ -87,37 +105,72 @@ public class DrawView extends View {
 
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		
-		
+
+
 		paint.setColor(Color.BLACK);
 		paint.setStyle(Paint.Style.STROKE);
 		paint.setAntiAlias(true);
 		canvas.translate(mPosX, mPosY);
 		canvas.scale(mScaleFactor, mScaleFactor,getWidth()/2,getHeight()/2);//scala verso il centro dello schermo
-		
-		for(int i=0;i<lista.size();i++){
-			Object o=lista.get(i);
-			Class c=o.getClass();
-		
-			if(c.equals(Point.class)){
-				drawPoint((Point)o, canvas,paint);
-			}else if(c.equals(LineString.class)){
-				drawLineString((LineString)o, canvas,paint);
-			}else if(c.equals(LinearRing.class))
-				drawLinearRing((LinearRing)o, canvas,paint);
-			else if(c.equals(Polygon.class))
-				drawPolygon((Polygon)o, canvas,paint);
-			else if(c.equals(MultiPoint.class))
-				drawMultiPoint((MultiPoint) o,canvas,paint);
-		}
-	
+
+        for (Layer layer : this.lista) {
+            for (Geometry geometry : layer.getGeometries()) {
+
+                if (geometry instanceof Point) {
+                    drawPoint((Point) geometry, canvas, paint);
+                } else if (geometry instanceof LineString) {
+                    drawLineString((LineString) geometry, canvas, paint);
+                } else if (geometry instanceof LinearRing) {
+                    drawLinearRing((LinearRing) geometry, canvas, paint);
+                } else if (geometry instanceof Polygon) {
+                    drawPolygon((Polygon)geometry, canvas, paint);
+                } else if (geometry instanceof MultiPoint)
+                    drawMultiPoint((MultiPoint)geometry, canvas, paint);
+            }
+        }
 	}
-	
-	private void drawPolygon(Polygon o, Canvas canvas, Paint paint) {
-		paint.setStyle(Paint.Style.FILL_AND_STROKE);
-		Path polygonPath = new Path();
+
+    private void drawPolygon(Polygon o, Canvas canvas, Paint paint) {
+        paint.setStyle(Paint.Style.FILL_AND_STROKE);
+        paint.setColor(Color.RED);
+        Path polygonPath;
+        polygonPath = toPath(o.getExteriorRing().getCoordinates());
+
+        int n= o.getNumInteriorRing();
+        for(int i=0;i<n;i++){
+            Coordinate[] holeVertices = o.getInteriorRingN(i).getCoordinates();
+            continuePath(polygonPath, holeVertices);
+        }
+
+        canvas.drawPath(polygonPath, paint);
+
+        paint.setColor(Color.BLACK);
+    }
+
+    private Path toPath(Coordinate[] coordinates ) {
+        Path path = new Path();
+        path.reset();
+        continuePath(path, coordinates);
+        return path;
+    }
+
+    private void continuePath(Path path, Coordinate[] coordinates) {
+        path.setFillType(Path.FillType.EVEN_ODD);
+        if (coordinates.length > 0) {
+            path.moveTo((float) coordinates[0].x, (float) coordinates[0].y);
+            for (int i = 0; i < coordinates.length; i++) {
+                path.lineTo((float) coordinates[i].x, (float) coordinates[i].y);
+            }
+        }
+        path.lineTo((float)coordinates[0].x, (float)coordinates[0].y);
+    }
+
+	private void drawPolygonAlmostCorrect(Polygon o, Canvas canvas, Paint paint) {
+		paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.argb(60, 255, 0, 0));
+		Path polygonPath;
 		Collection<Object> holeVerticesCollection= new LinkedList<Object>();
-		polygonPath = toPath(o.getExteriorRing().getCoordinates());
+		drawCoordinatesPath(o.getExteriorRing().getCoordinates(), canvas, paint);
 		int n= o.getNumInteriorRing();
 		if(n!=0){
 			for(int i=0;i<n;i++){
@@ -125,25 +178,34 @@ public class DrawView extends View {
 			}
 			for(Iterator<Object> i = holeVerticesCollection.iterator(); i.hasNext(); ) {
 				Coordinate[] holeVertices = (Coordinate[]) i.next();
-				polygonPath.addPath(toPath(holeVertices));
-			}
-			canvas.drawPath(polygonPath, paint);
-		}else{
-			canvas.drawPath(polygonPath, paint);
-		}
-	}
-	
-	private Path toPath(Coordinate[] coordinates ) {
-		Path path = new Path();
-		path.setFillType(Path.FillType.EVEN_ODD);
-		if (coordinates.length > 0) {
-			path.moveTo((float) coordinates[0].x, (float) coordinates[0].y);
-			for( int i = 0; i < coordinates.length; i++ ) {
-				path.lineTo((float) coordinates[i].x, (float) coordinates[i].y);
+				drawCoordinatesPath(holeVertices, canvas, paint);
 			}
 		}
-		return path;
+
+        paint.setColor(Color.BLACK);
 	}
+
+    private void drawCoordinatesPath(Coordinate[] coordinates, Canvas canvas, Paint paint) {
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.RED);
+
+        int n=0;
+        float [] ptn;
+        int k=0;
+        n=coordinates.length;
+        int arraySize=(n-1)*4;
+        ptn = new float [arraySize];
+        for(int i=0;i<arraySize;i=i+4){
+            ptn[i]=(float)coordinates[k].x;
+            ptn[i+1]=(float)coordinates[k].y;
+            ptn[i+2]=(float)coordinates[k+1].x;
+            ptn[i+3]=(float)coordinates[k+1].y;
+            k++;
+        }
+        canvas.drawLines(ptn, paint);
+
+        paint.setColor(Color.BLACK);
+    }
 
 	private void drawLinearRing(LinearRing o, Canvas canvas, Paint paint) {
 		drawLineString((LineString)o, canvas, paint);
@@ -151,7 +213,7 @@ public class DrawView extends View {
 
 	private void drawPoint(Point p, Canvas canvas, Paint paint) {	
 		//Disegna il punto
-		canvas.drawPoint((float)p.getX(),(float) p.getY(), paint);
+		canvas.drawPoint((float) p.getX(), (float) p.getY(), paint);
 		//Ottieni result e i dati da visualizzare
 
 		if(p.getUserData()!=null){
