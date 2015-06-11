@@ -132,7 +132,7 @@ public class DrawView extends View {
 
     private void drawPolygon(Polygon o, Canvas canvas, Paint paint) {
         paint.setStyle(Paint.Style.FILL_AND_STROKE);
-        paint.setColor(Color.RED);
+        paint.setColor(Color.rgb(o.toString().hashCode() % 255, (int)o.getArea() % 255, o.getBoundaryDimension() % 255));
         Path polygonPath;
         polygonPath = toPath(o.getExteriorRing().getCoordinates());
 

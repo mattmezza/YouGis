@@ -263,16 +263,25 @@ public class WFSClientMainActivity extends Activity {
         switch (item.getItemId()) {
             case R.id.action_Buffer:
                 alert.setTitle("Buffering");
-                alert.setMessage("Which geometries ids do you want to buffer (input: X-Y)\n" +
+                alert.setMessage("Which geometries id(s) do you want to buffer (input: X:distance or X-Y:distance)\n" +
                         "Max: " + layer.getGeometries().size());
 
                 alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         String text = rangeInput.getText().toString();
-                        String[] parts = text.split("\\-");
+                        String[] wholeParts = text.split("\\:");
+                        int distance = 20000;
+                        String mainPart = wholeParts[0];
+
+                        if (wholeParts.length == 2)
+                            distance = Integer.parseInt(wholeParts[1]);
+
+                        String[] parts = mainPart.split("\\-");
                         int from = Integer.parseInt(parts[0]);
-                        int to = Integer.parseInt(parts[1]);
-                        layer.addGeometry(layer.applyBuffers(layer.getGeometries().subList(from, to), 20000));
+                        int to = from+1;
+                        if (parts.length == 2)
+                            to = Integer.parseInt(parts[1]);
+                        layer.addGeometry(layer.applyBuffers(layer.getGeometries().subList(from, to), distance));
                     }
                 });
 
@@ -288,7 +297,7 @@ public class WFSClientMainActivity extends Activity {
                         String text = rangeInput.getText().toString();
                         String[] parts = text.split("\\-");
                         int from = Integer.parseInt(parts[0]);
-                        int to = Integer.parseInt(parts[1]);
+                        int to = Integer.parseInt(parts[1])+1;
                         layer.addGeometry(layer.applyIntersection(layer.getGeometries().subList(from, to)));
                     }
                 });
