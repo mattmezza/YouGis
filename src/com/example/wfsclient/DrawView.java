@@ -132,143 +132,98 @@ public class DrawView extends View {
 
     private void drawPolygon(Polygon o, Canvas canvas, Paint paint) {
         paint.setStyle(Paint.Style.FILL_AND_STROKE);
-        paint.setColor(Color.rgb(o.toString().hashCode() % 255, (int)o.getArea() % 255, o.getBoundaryDimension() % 255));
-        Path polygonPath;
+        paint.setColor(Color.rgb(o.getNumPoints() % 255, (int)o.getArea() % 255, o.getBoundaryDimension() % 255));
+        Path polygonPath = new Path();
+        Collection<Object> holeVerticesCollection= new LinkedList<Object>();
         polygonPath = toPath(o.getExteriorRing().getCoordinates());
-
         int n= o.getNumInteriorRing();
-        for(int i=0;i<n;i++){
-            Coordinate[] holeVertices = o.getInteriorRingN(i).getCoordinates();
-            continuePath(polygonPath, holeVertices);
+        if(n!=0){
+            for(int i=0;i<n;i++){
+                holeVerticesCollection.add(o.getInteriorRingN(i).getCoordinates());
+            }
+            for(Iterator<Object> i = holeVerticesCollection.iterator(); i.hasNext(); ) {
+                Coordinate[] holeVertices = (Coordinate[]) i.next();
+                polygonPath.addPath(toPath(holeVertices));
+            }
+            canvas.drawPath(polygonPath, paint);
+        }else{
+            canvas.drawPath(polygonPath, paint);
         }
-
-        canvas.drawPath(polygonPath, paint);
-
-        paint.setColor(Color.BLACK);
     }
 
     private Path toPath(Coordinate[] coordinates ) {
         Path path = new Path();
-        path.reset();
-        continuePath(path, coordinates);
-        return path;
-    }
-
-    private void continuePath(Path path, Coordinate[] coordinates) {
         path.setFillType(Path.FillType.EVEN_ODD);
         if (coordinates.length > 0) {
             path.moveTo((float) coordinates[0].x, (float) coordinates[0].y);
-            for (int i = 0; i < coordinates.length; i++) {
+            for( int i = 0; i < coordinates.length; i++ ) {
                 path.lineTo((float) coordinates[i].x, (float) coordinates[i].y);
             }
         }
-        path.lineTo((float)coordinates[0].x, (float)coordinates[0].y);
+        return path;
     }
 
-	private void drawPolygonAlmostCorrect(Polygon o, Canvas canvas, Paint paint) {
-		paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.argb(60, 255, 0, 0));
-		Path polygonPath;
-		Collection<Object> holeVerticesCollection= new LinkedList<Object>();
-		drawCoordinatesPath(o.getExteriorRing().getCoordinates(), canvas, paint);
-		int n= o.getNumInteriorRing();
-		if(n!=0){
-			for(int i=0;i<n;i++){
-				holeVerticesCollection.add(o.getInteriorRingN(i).getCoordinates());
-			}
-			for(Iterator<Object> i = holeVerticesCollection.iterator(); i.hasNext(); ) {
-				Coordinate[] holeVertices = (Coordinate[]) i.next();
-				drawCoordinatesPath(holeVertices, canvas, paint);
-			}
-		}
-
-        paint.setColor(Color.BLACK);
-	}
-
-    private void drawCoordinatesPath(Coordinate[] coordinates, Canvas canvas, Paint paint) {
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.RED);
-
-        int n=0;
-        float [] ptn;
-        int k=0;
-        n=coordinates.length;
-        int arraySize=(n-1)*4;
-        ptn = new float [arraySize];
-        for(int i=0;i<arraySize;i=i+4){
-            ptn[i]=(float)coordinates[k].x;
-            ptn[i+1]=(float)coordinates[k].y;
-            ptn[i+2]=(float)coordinates[k+1].x;
-            ptn[i+3]=(float)coordinates[k+1].y;
-            k++;
-        }
-        canvas.drawLines(ptn, paint);
-
-        paint.setColor(Color.BLACK);
+    private void drawLinearRing(LinearRing o, Canvas canvas, Paint paint) {
+        drawLineString((LineString)o, canvas, paint);
     }
 
-	private void drawLinearRing(LinearRing o, Canvas canvas, Paint paint) {
-		drawLineString((LineString)o, canvas, paint);
-	}
+    private void drawPoint(Point p, Canvas canvas, Paint paint) {
+        //Disegna il punto
+        canvas.drawPoint((float)p.getX(),(float) p.getY(), paint);
+        //Ottieni result e i dati da visualizzare
 
-	private void drawPoint(Point p, Canvas canvas, Paint paint) {	
-		//Disegna il punto
-		canvas.drawPoint((float) p.getX(), (float) p.getY(), paint);
-		//Ottieni result e i dati da visualizzare
+        if(p.getUserData()!=null){
+            String usdData=(String)p.getUserData();
+            float result= getResources().getDimensionPixelSize(R.dimen.font_size)/mScaleFactor;
 
-		if(p.getUserData()!=null){
-			String usdData=(String)p.getUserData();
-			float result= getResources().getDimensionPixelSize(R.dimen.font_size)/mScaleFactor;	
-			
-			//Settaggi per il testo
-			paintTesto.setColor(Color.BLACK);
-			paintTesto.setStrokeWidth(2);
-			paintTesto.setStyle(Paint.Style.FILL);
-			paintTesto.setAntiAlias(true);
+            //Settaggi per il testo
+            paintTesto.setColor(Color.BLACK);
+            paintTesto.setStrokeWidth(2);
+            paintTesto.setStyle(Paint.Style.FILL);
+            paintTesto.setAntiAlias(true);
 
-			TextPaint pt = new TextPaint(paintTesto);
+            TextPaint pt = new TextPaint(paintTesto);
 
-			if (result>600)result=600;
-			pt.setTextSize(result);
+            if (result>600)result=600;
+            pt.setTextSize(result);
 
-			int s=4;
+            int s=4;
 //			if(mScaleFactor<=0.001f)
 //				s=4;
 //			else if(mScaleFactor<=0.01f)
 //				s=3;
-			pt.setTextScaleX(s);
-			pt.setTextScaleX(4);		
-			canvas.drawText(usdData,(float)p.getX()-10*s,(float) p.getY()-10*s, pt);
-		}
-	}
+            pt.setTextScaleX(s);
+            pt.setTextScaleX(4);
+            canvas.drawText(usdData,(float)p.getX()-10*s,(float) p.getY()-10*s, pt);
+        }
+    }
 
-	public void drawLineString(LineString line,Canvas canvas, Paint paint){
-		int n=0;
-		float [] ptn=null;
-		int k=0;
-		n=line.getNumPoints();
-		int arraySize=(n-1)*4;
-		ptn = new float [arraySize];
-		for(int i=0;i<arraySize;i=i+4){
-			ptn[i]=(float)line.getPointN(k).getX();
-			ptn[i+1]=(float)line.getPointN(k).getY();
-			ptn[i+2]=(float)line.getPointN(k+1).getX();
-			ptn[i+3]=(float)line.getPointN(k+1).getY();
-			k++;
-		}
-		canvas.drawLines(ptn, paint);
-	}
-	
-	private void drawMultiPoint(MultiPoint mp, Canvas canvas, Paint paint) {
-		Coordinate coord[]= mp.getCoordinates();
-		float ptn []=new float[mp.getNumPoints()*2];
-		int j=0;
-		for(int i=0;i<coord.length;i++){
-			ptn[j]=(float)coord[i].x;
-			ptn[j+1]=(float)coord[i].y;
-			j=j+2;
-		}
-		canvas.drawPoints(ptn, paint);
-	}
-	
+    public void drawLineString(LineString line,Canvas canvas, Paint paint){
+        int n=0;
+        float [] ptn=null;
+        int k=0;
+        n=line.getNumPoints();
+        int arraySize=(n-1)*4;
+        ptn = new float [arraySize];
+        for(int i=0;i<arraySize;i=i+4){
+            ptn[i]=(float)line.getPointN(k).getX();
+            ptn[i+1]=(float)line.getPointN(k).getY();
+            ptn[i+2]=(float)line.getPointN(k+1).getX();
+            ptn[i+3]=(float)line.getPointN(k+1).getY();
+            k++;
+        }
+        canvas.drawLines(ptn, paint);
+    }
+
+    private void drawMultiPoint(MultiPoint mp, Canvas canvas, Paint paint) {
+        Coordinate coord[]= mp.getCoordinates();
+        float ptn []=new float[mp.getNumPoints()*2];
+        int j=0;
+        for(int i=0;i<coord.length;i++){
+            ptn[j]=(float)coord[i].x;
+            ptn[j+1]=(float)coord[i].y;
+            j=j+2;
+        }
+        canvas.drawPoints(ptn, paint);
+    }
 }

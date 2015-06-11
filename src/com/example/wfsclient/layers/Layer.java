@@ -58,4 +58,8 @@ public class Layer {
 
         return currentGeometry;
     }
+
+    public boolean removeGeometry(Geometry pGeometry) {
+        return this.geometries.remove(pGeometry);
+    }
 }

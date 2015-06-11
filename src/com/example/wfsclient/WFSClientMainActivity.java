@@ -4,8 +4,10 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -43,8 +45,12 @@ public class WFSClientMainActivity extends Activity {
 	private String defaultwfs = "http://nsidc.org/cgi-bin/atlas_north?service=WFS&request=GetCapabilities";
 	//Piemonte
 	//private String defaultwfs = "http://geomap.reteunitaria.piemonte.it/ws/gsareprot/rp-01/areeprotwfs/wfs_gsareprot_1?service=WFS&request=getCapabilities";
+    //Torino
+    //private String defaultwfs = "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc01_dati_di_base?service=WFS&request=getCapabilities";
 	//Sardegna
 	//private String defaultwfs = "http://webgis.regione.sardegna.it/geoserver/wfs?service=WFS&request=GetCapabilities";
+
+    private Map<String, String> wfsList;
 
     String featureName = null;
 
@@ -54,10 +60,19 @@ public class WFSClientMainActivity extends Activity {
 	private String request="";
 	private boolean requestBoolean=false;
 
+    private void createMenuEntries() {
+        wfsList = new HashMap<String, String>();
+        wfsList.put("North atlas", "http://nsidc.org/cgi-bin/atlas_north?service=WFS&request=GetCapabilities");
+        wfsList.put("Piemonte", "http://geomap.reteunitaria.piemonte.it/ws/gsareprot/rp-01/areeprotwfs/wfs_gsareprot_1?service=WFS&request=getCapabilities");
+        wfsList.put("Torino", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc01_dati_di_base?service=WFS&request=getCapabilities");
+        wfsList.put("Sardegna", "http://webgis.regione.sardegna.it/geoserver/wfs?service=WFS&request=GetCapabilities");
+    }
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_wfsclient_main);
+        createMenuEntries();
 	}
 
 	@Override
@@ -246,9 +261,29 @@ public class WFSClientMainActivity extends Activity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (this.currentLayers == null)
-            return false;
+        if (this.currentLayers == null) {
+            if (item.getItemId() == R.id.action_settings) {
+                final String[] items = new String[wfsList.keySet().size()];
 
+                int i = 0;
+                for (String currentSelectionItem : wfsList.keySet()) {
+                    items[i] = currentSelectionItem;
+                    i++;
+                }
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("Select a WFS");
+                builder.setItems(items, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int item) {
+                        defaultwfs = wfsList.get(items[item]);
+                        Toast.makeText(getApplicationContext(), "Selected WFS "+items[item], Toast.LENGTH_SHORT).show();
+                    }
+                }).show();
+
+                return true;
+            }
+            return false;
+        }
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
         final EditText rangeInput = new EditText(this);
 
@@ -299,6 +334,10 @@ public class WFSClientMainActivity extends Activity {
                         int from = Integer.parseInt(parts[0]);
                         int to = Integer.parseInt(parts[1])+1;
                         layer.addGeometry(layer.applyIntersection(layer.getGeometries().subList(from, to)));
+
+                        List<Geometry> toRemoveList = new ArrayList<Geometry>(layer.getGeometries().subList(from, to));
+                        for (Geometry toRemove : toRemoveList)
+                            layer.removeGeometry(toRemove);
                     }
                 });
 
