@@ -39,13 +39,19 @@ public class DrawView extends View {
 
 	Paint paint = new Paint();
 	Paint paintTesto = new Paint();
+    private float centerX;
+    private float centerY;
 
-	public DrawView(Context context,List<Layer> layers) {
+    public DrawView(Context context,List<Layer> layers) {
 		super(context);
 
         mScaleDetector = new ScaleGestureDetector(context, new ScaleListener());
 
         lista = layers;
+
+        centerX = (float)lista.get(0).getGeometries().get(0).getCoordinates()[0].x;
+        centerY = (float)lista.get(0).getGeometries().get(0).getCoordinates()[0].y;
+
         /*
         Geometry buffer1 = this.applyBuffers(lista.get(166), 30000);
         Geometry buffer2 = this.applyBuffers(lista, 30000);
@@ -104,8 +110,10 @@ public class DrawView extends View {
 	}
 
 	protected void onDraw(Canvas canvas) {
-		super.onDraw(canvas);
+        if (lista.size() == 0)
+            return;
 
+		super.onDraw(canvas);
 
 		paint.setColor(Color.BLACK);
 		paint.setStyle(Paint.Style.STROKE);
@@ -113,9 +121,13 @@ public class DrawView extends View {
 		canvas.translate(mPosX, mPosY);
 		canvas.scale(mScaleFactor, mScaleFactor,getWidth()/2,getHeight()/2);//scala verso il centro dello schermo
 
+        double fromX = (this.mPosX-canvas.getWidth()/2)/canvas.getDensity();
+        double toX = (this.mPosX+canvas.getWidth()/2)/canvas.getDensity();
+        LOGGER.info("From: " + fromX +
+                ", to:" + toX);
+        paint.setStyle(Paint.Style.STROKE);
         for (Layer layer : this.lista) {
             for (Geometry geometry : layer.getGeometries()) {
-
                 if (geometry instanceof Point) {
                     drawPoint((Point) geometry, canvas, paint);
                 } else if (geometry instanceof LineString) {
@@ -155,21 +167,32 @@ public class DrawView extends View {
         Path path = new Path();
         path.setFillType(Path.FillType.EVEN_ODD);
         if (coordinates.length > 0) {
-            path.moveTo((float) coordinates[0].x, (float) coordinates[0].y);
+            path.moveTo((float) coordinates[0].x-centerX, (float) coordinates[0].y-centerY);
             for( int i = 0; i < coordinates.length; i++ ) {
-                path.lineTo((float) coordinates[i].x, (float) coordinates[i].y);
+                path.lineTo((float) coordinates[i].x-centerX, (float) coordinates[i].y-centerY);
             }
         }
         return path;
     }
 
     private void drawLinearRing(LinearRing o, Canvas canvas, Paint paint) {
-        drawLineString((LineString)o, canvas, paint);
+        int n = o.getNumPoints();
+        int k = 0;
+        int arraySize=(n-1)*4;
+        float[] ptn = new float [arraySize];
+        for(int i=0;i<arraySize;i=i+4){
+            ptn[i]=(float)o.getPointN(k).getX()-centerX;
+            ptn[i+1]=(float)o.getPointN(k).getY()-centerY;
+            ptn[i+2]=(float)o.getPointN(k+1).getX()-centerX;
+            ptn[i+3]=(float)o.getPointN(k+1).getY()-centerY;
+            k++;
+        }
+        canvas.drawLines(ptn, paint);
     }
 
     private void drawPoint(Point p, Canvas canvas, Paint paint) {
         //Disegna il punto
-        canvas.drawPoint((float)p.getX(),(float) p.getY(), paint);
+        canvas.drawPoint((float)p.getX()-centerX,(float) p.getY()-centerY, paint);
         //Ottieni result e i dati da visualizzare
 
         if(p.getUserData()!=null){
@@ -194,7 +217,7 @@ public class DrawView extends View {
 //				s=3;
             pt.setTextScaleX(s);
             pt.setTextScaleX(4);
-            canvas.drawText(usdData,(float)p.getX()-10*s,(float) p.getY()-10*s, pt);
+            canvas.drawText(usdData,(float)p.getX()-centerX-10*s,(float) p.getY()-centerY-10*s, pt);
         }
     }
 
@@ -206,10 +229,10 @@ public class DrawView extends View {
         int arraySize=(n-1)*4;
         ptn = new float [arraySize];
         for(int i=0;i<arraySize;i=i+4){
-            ptn[i]=(float)line.getPointN(k).getX();
-            ptn[i+1]=(float)line.getPointN(k).getY();
-            ptn[i+2]=(float)line.getPointN(k+1).getX();
-            ptn[i+3]=(float)line.getPointN(k+1).getY();
+            ptn[i]=(float)line.getPointN(k).getX()-centerX;
+            ptn[i+1]=(float)line.getPointN(k).getY()-centerY;
+            ptn[i+2]=(float)line.getPointN(k+1).getX()-centerX;
+            ptn[i+3]=(float)line.getPointN(k+1).getY()-centerY;
             k++;
         }
         canvas.drawLines(ptn, paint);
@@ -220,8 +243,8 @@ public class DrawView extends View {
         float ptn []=new float[mp.getNumPoints()*2];
         int j=0;
         for(int i=0;i<coord.length;i++){
-            ptn[j]=(float)coord[i].x;
-            ptn[j+1]=(float)coord[i].y;
+            ptn[j]=(float)coord[i].x-centerX;
+            ptn[j+1]=(float)coord[i].y-centerY;
             j=j+2;
         }
         canvas.drawPoints(ptn, paint);
