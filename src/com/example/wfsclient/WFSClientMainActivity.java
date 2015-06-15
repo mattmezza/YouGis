@@ -2,6 +2,7 @@ package com.example.wfsclient;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -64,8 +66,9 @@ public class WFSClientMainActivity extends Activity {
         wfsList = new HashMap<String, String>();
         wfsList.put("North atlas", "http://nsidc.org/cgi-bin/atlas_north?service=WFS&request=GetCapabilities");
         wfsList.put("Piemonte", "http://geomap.reteunitaria.piemonte.it/ws/gsareprot/rp-01/areeprotwfs/wfs_gsareprot_1?service=WFS&request=getCapabilities");
-        wfsList.put("Torino", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc01_dati_di_base?service=WFS&request=getCapabilities");
+        wfsList.put("Torino", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc116_chiese?service=WFS&request=getCapabilities");
         wfsList.put("Sardegna", "http://webgis.regione.sardegna.it/geoserver/wfs?service=WFS&request=GetCapabilities");
+        wfsList.put("Torino - Votazioni", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc107_bagni?service=WFS&request=getCapabilities");
     }
 
 	@Override
@@ -145,7 +148,15 @@ public class WFSClientMainActivity extends Activity {
 		}
 
 		protected void onPostExecute(String result) {
-			request=feature.get(0)+"service=WFS&version="+wfsVersion+"&request=GetFeature&typeName="+feature.get(1);
+            if (feature == null) {
+                return;
+            }
+            String baseUrl = feature.get(0);
+
+			request = baseUrl +
+                    (baseUrl.endsWith("?") ? "" : "?") +
+                    "service=WFS&version=" + wfsVersion +
+                    "&request=GetFeature&typeName=" + feature.get(1);
 			LOGGER.info("REQUEST 1 " + feature.toString());
 			requestBoolean=true;
 			startConnection();//Ricontrolla la connessione e avvia il download della feature
@@ -189,9 +200,11 @@ public class WFSClientMainActivity extends Activity {
 		String result ="";
 		//aggiungo la versione del wfs all'url
 		urlString=urlString+"&version="+wfsVersion;
-		try{
-			stream=downloadUrl(urlString);
-			feature=ParserCapabilities.parse(stream);
+		try {
+            stream = downloadUrl(urlString);
+            feature = ParserCapabilities.parse(stream);
+        } catch (SocketTimeoutException e) {
+            throw new IOException(e.getMessage());
 		}catch(Exception e){
 			e.printStackTrace();
 		}finally{
@@ -284,59 +297,89 @@ public class WFSClientMainActivity extends Activity {
             }
             return false;
         }
+
+        //Creates the alert box
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
-        final EditText rangeInput = new EditText(this);
 
-        alert.setView(rangeInput);
-
+        //Adds a "Cancel" button
         alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {}
+            public void onClick(DialogInterface dialog, int whichButton) {
+            }
         });
 
         final Layer layer = this.currentLayers.get(0);
 
+        LayoutInflater inflater;
+        View alertView;
+        final EditText idsText;
+
         switch (item.getItemId()) {
             case R.id.action_Buffer:
-                alert.setTitle("Buffering");
-                alert.setMessage("Which geometries id(s) do you want to buffer (input: X:distance or X-Y:distance)\n" +
-                        "Max: " + layer.getGeometries().size());
+                alert.setTitle("Buffering (0 to " + (layer.getGeometries().size()-1) +")");
+
+                //Sets the layout
+                inflater = this.getLayoutInflater();
+                alertView = inflater.inflate(R.layout.dialog_buffering, null);
+                alert.setView(alertView);
+
+                idsText = (EditText)alertView.findViewById(R.id.bufferingIds);
+                final EditText distanceText = (EditText)alertView.findViewById(R.id.bufferingDistance);
 
                 alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        String text = rangeInput.getText().toString();
-                        String[] wholeParts = text.split("\\:");
-                        int distance = 20000;
-                        String mainPart = wholeParts[0];
+                        int distance;
+                        try {
+                            distance = Integer.parseInt(distanceText.getText().toString());
+                        } catch (NumberFormatException e) {
+                            showError("Error", "Distance must be a number!");
+                            return;
+                        }
 
-                        if (wholeParts.length == 2)
-                            distance = Integer.parseInt(wholeParts[1]);
+                        String[] parts = idsText.getText().toString().split("\\,");
+                        List<Geometry> elements;
+                        try {
+                            elements = getGeometriesFromLayer(layer, parts);
+                        } catch (NumberFormatException e) {
+                            showError("Error", "Wrong format for ID list!");
+                            return;
+                        } catch (ArrayIndexOutOfBoundsException e) {
+                            showError("Error", "ID not valid!");
+                            return;
+                        }
 
-                        String[] parts = mainPart.split("\\-");
-                        int from = Integer.parseInt(parts[0]);
-                        int to = from+1;
-                        if (parts.length == 2)
-                            to = Integer.parseInt(parts[1]);
-                        layer.addGeometry(layer.applyBuffers(layer.getGeometries().subList(from, to), distance));
+                        layer.addGeometry(layer.applyBuffers(elements, distance));
                     }
                 });
 
                 alert.show();
                 return true;
             case R.id.action_Intersection:
-                alert.setTitle("Intersection");
-                alert.setMessage("Which geometries ids do you want to intersect (input: X-Y).\n" +
-                        "Max: " + layer.getGeometries().size());
+                alert.setTitle("Intersection (0 to " + (layer.getGeometries().size()-1) +")");
+
+                //Sets the layout
+                inflater = this.getLayoutInflater();
+                alertView = inflater.inflate(R.layout.dialog_intersect, null);
+                alert.setView(alertView);
+
+                idsText = (EditText)alertView.findViewById(R.id.intersectIds);
 
                 alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        String text = rangeInput.getText().toString();
-                        String[] parts = text.split("\\-");
-                        int from = Integer.parseInt(parts[0]);
-                        int to = Integer.parseInt(parts[1])+1;
-                        layer.addGeometry(layer.applyIntersection(layer.getGeometries().subList(from, to)));
+                        String[] parts = idsText.getText().toString().split("\\,");
+                        List<Geometry> elements;
+                        try {
+                            elements = getGeometriesFromLayer(layer, parts);
+                        } catch (NumberFormatException e) {
+                            showError("Error", "Wrong format for ID list!");
+                            return;
+                        } catch (ArrayIndexOutOfBoundsException e) {
+                            showError("Error", "ID not valid!");
+                            return;
+                        }
 
-                        List<Geometry> toRemoveList = new ArrayList<Geometry>(layer.getGeometries().subList(from, to));
-                        for (Geometry toRemove : toRemoveList)
+                        layer.addGeometry(layer.applyIntersection(elements));
+
+                        for (Geometry toRemove : elements)
                             layer.removeGeometry(toRemove);
                     }
                 });
@@ -346,5 +389,27 @@ public class WFSClientMainActivity extends Activity {
             default:
                 return false;
         }
+    }
+
+    private List<Geometry> getGeometriesFromLayer(Layer pLayer, String[] pIds) {
+        List<Geometry> elements = new ArrayList<Geometry>();
+        for (String part : pIds) {
+            int currentId = Integer.parseInt(part);
+            elements.add(pLayer.getGeometries().get(currentId));
+        }
+
+        return elements;
+    }
+
+    private void showError(String pTitle, String pMessage) {
+        new AlertDialog.Builder(this)
+                .setTitle(pTitle)
+                .setMessage(pMessage)
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
     }
 }
