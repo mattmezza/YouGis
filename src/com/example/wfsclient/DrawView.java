@@ -192,7 +192,9 @@ public class DrawView extends View {
 
     private void drawPoint(Point p, Canvas canvas, Paint paint) {
         //Disegna il punto
-        canvas.drawPoint((float)p.getX()-centerX,(float) p.getY()-centerY, paint);
+        paint.setStyle(Paint.Style.FILL_AND_STROKE);
+        canvas.drawCircle((float)p.getX()-centerX,(float) p.getY()-centerY, 3/mScaleFactor, paint);
+        //canvas.drawPoint((float)p.getX()-centerX,(float) p.getY()-centerY, paint);
         //Ottieni result e i dati da visualizzare
 
         if(p.getUserData()!=null){

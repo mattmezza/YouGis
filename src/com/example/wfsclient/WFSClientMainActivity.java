@@ -50,13 +50,6 @@ public class WFSClientMainActivity extends Activity {
 	//WFS NSIDC
     //GOOD BUFFER: 10000
 	private String defaultwfs = "http://nsidc.org/cgi-bin/atlas_north?service=WFS&request=GetCapabilities";
-	//Piemonte
-	//private String defaultwfs = "http://geomap.reteunitaria.piemonte.it/ws/gsareprot/rp-01/areeprotwfs/wfs_gsareprot_1?service=WFS&request=getCapabilities";
-    //Torino
-    //private String defaultwfs = "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc01_dati_di_base?service=WFS&request=getCapabilities";
-	//Sardegna
-	//private String defaultwfs = "http://webgis.regione.sardegna.it/geoserver/wfs?service=WFS&request=GetCapabilities";
-
     private Map<String, String> wfsList;
 
     String featureName = null;
@@ -279,6 +272,8 @@ public class WFSClientMainActivity extends Activity {
 				showError("Error", "An unknown error occurred.");
                 e.printStackTrace();
 			} finally {
+
+            }
 
             return "";
 		}
