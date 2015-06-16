@@ -1,16 +1,17 @@
 package com.example.wfsclient;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.xmlpull.v1.XmlPullParserException;
 
 import com.example.wfsclient.layers.Layer;
 import com.vividsolutions.jts.geom.Geometry;
@@ -20,7 +21,6 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
@@ -135,16 +135,35 @@ public class WFSClientMainActivity extends Activity {
 	 * Classe asincrona per la connesione al WFS
 	 *
 	 */
-	private class ConnectToWFS extends AsyncTask <String,Void,String>{
+	private class ConnectToWFS extends MyAsyncTask <String,Integer,String>{
 
 		protected String doInBackground(String... urls) {
 			try {
-				return loadCapabilitiDocument(urls[0]);
+                String urlString = urls[0];
+                InputStream stream = null;
+                String result ="";
+                //aggiungo la versione del wfs all'url
+                urlString = urlString+"&version="+wfsVersion;
+                try {
+                    stream = downloadUrl(urlString, this);
+
+                    feature = ParserCapabilities.parse(stream);
+                } catch (SocketTimeoutException e) {
+                    throw new IOException(e.getMessage());
+                }catch(Exception e){
+                    throw new IOException(e.getMessage());
+                }finally{
+                    // Chiusura dell'INPUT STREAM
+                    if (stream != null) {
+                        stream.close();
+                    }
+                }
+                return result;
 			} catch (IOException e) {
 				return getResources().getString(R.string.connection_error);
-			} catch (XmlPullParserException e) {
-				return getResources().getString(R.string.xml_error);
-			}
+			} catch (Exception e) {
+                return "Errore sconosciuto";
+            }
 		}
 
 		protected void onPostExecute(String result) {
@@ -162,20 +181,44 @@ public class WFSClientMainActivity extends Activity {
 			startConnection();//Ricontrolla la connessione e avvia il download della feature
 		}
 
-	}//end classe task WFS
+        protected void onProgressUpdate(Integer... values) {
+            LOGGER.info(Arrays.toString(values));
+            super.onProgressUpdate(values);
+        }
+
+
+    }//end classe task WFS
 
 	/**
 	 * Classe asincrona per effettuare il parser del gml
 	 */
-	private class DownloadXmlTask extends AsyncTask <String,Void,String>{
+	private class DownloadXmlTask extends MyAsyncTask <String,Integer,String>{
 
 		@Override
 		protected String doInBackground(String... urls) {
 			try {
-				return loadXmlFromNetwork(urls[0]);
+                String urlString = urls[0];
+                InputStream stream = null;
+                String result ="";
+
+                try{
+                    stream=downloadUrl(urlString, this);
+                    if(!disegna)
+                        result=XMLParser.parse(stream);
+                    else{
+                        listaOggetti=XMLParserDraw.parse(stream);
+                    }
+                }catch(Exception e){
+                    e.printStackTrace();
+                }finally{
+                    if (stream != null) {
+                        stream.close();
+                    }
+                }
+                return result;
 			} catch (IOException e) {
 				return getResources().getString(R.string.connection_error);
-			} catch (XmlPullParserException e) {
+			} catch (Exception e) {
 				return getResources().getString(R.string.xml_error);
 			}
 		}
@@ -183,64 +226,24 @@ public class WFSClientMainActivity extends Activity {
 		//per mostare all�utente il file scaricato.
 		protected void onPostExecute(String result) {
 			setContentView(R.layout.activity_wfsclient_main);
-				try {
-					LOGGER.info("INVOCO LA VIEW");
-					disegnaOnView(listaOggetti);
-				} catch (ParseException e) {
-					e.printStackTrace();
-				}
-			}
+            try {
+                LOGGER.info("INVOCO LA VIEW");
+                disegnaOnView(listaOggetti);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
 
-	}
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            LOGGER.info(Arrays.toString(values));
+            super.onProgressUpdate(values);
+        }
 
-	/**Effettua il parser del capabilitie document utilizzando la classe ParseCapabilities */
-	private String loadCapabilitiDocument(String urlString) throws XmlPullParserException, IOException{
-
-		InputStream stream = null;
-		String result ="";
-		//aggiungo la versione del wfs all'url
-		urlString=urlString+"&version="+wfsVersion;
-		try {
-            stream = downloadUrl(urlString);
-            feature = ParserCapabilities.parse(stream);
-        } catch (SocketTimeoutException e) {
-            throw new IOException(e.getMessage());
-		}catch(Exception e){
-			e.printStackTrace();
-		}finally{
-			// Chiusura dell'INPUT STREAM
-			if (stream != null) {
-				stream.close();
-			}
-		}
-		return result;
-	}
-
-	/**Scarica il file gml dall'url*/
-	private String loadXmlFromNetwork(String urlString) throws XmlPullParserException, IOException {
-
-		InputStream stream = null;
-		String result ="";
-
-		try{
-			stream=downloadUrl(urlString);
-			if(!disegna)
-				result=XMLParser.parse(stream);
-			else{
-				listaOggetti=XMLParserDraw.parse(stream);
-			}
-		}catch(Exception e){
-			e.printStackTrace();
-		}finally{
-			if (stream != null) {
-				stream.close();
-			}
-		}
-		return result;
-	}
+    }
 
 	/**Si collega all'indirizzo dell'url*/
-	private InputStream downloadUrl(String urlString) throws IOException {
+	private InputStream downloadUrl(String urlString, MyAsyncTask<String, Integer, String> pAsyncTask) throws IOException {
 		URL url = new URL(urlString);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.setReadTimeout(10000 /* milliseconds */);
@@ -249,8 +252,26 @@ public class WFSClientMainActivity extends Activity {
 		conn.setDoInput(true);
 		// Starts the query
 		conn.connect();
+
 		InputStream stream = conn.getInputStream();
-		return stream;
+
+        if (conn.getContentLength() == -1) {
+            //TODO: Set indeterminate
+
+            return stream;
+        }
+
+        int currentByte = 0;
+        byte[] result = new byte[conn.getContentLength()];
+        int i = 0;
+        while ((currentByte = stream.read()) != -1) {
+            result[i] = (byte)currentByte;
+            pAsyncTask.publish((int) (((float) i / result.length) * 100));
+            i++;
+        }
+
+        InputStream newStream = new ByteArrayInputStream(result);
+		return newStream;
 	}
 	/**Flag per distinguere quale bottone � stato utilizzato*/
 	public void disegna(View view){
