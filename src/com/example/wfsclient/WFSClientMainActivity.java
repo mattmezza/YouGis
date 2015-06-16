@@ -68,7 +68,7 @@ public class WFSClientMainActivity extends Activity {
     private void createMenuEntries() {
         wfsList = new HashMap<String, String>();
         wfsList.put("North atlas", "http://nsidc.org/cgi-bin/atlas_north?service=WFS&request=GetCapabilities");
-        wfsList.put("Piemonte", "http://geomap.reteunitaria.piemonte.it/ws/gsareprot/rp-01/areeprotwfs/wfs_gsareprot_1?service=WFS&request=getCapabilities");
+        wfsList.put("Zone sismiche", "http://wms.pcn.minambiente.it/ogc?map=/ms_ogc/wfs/Zone_sismogenetiche_ZS9.map");
         wfsList.put("Torino", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc116_chiese?service=WFS&request=getCapabilities");
         wfsList.put("Sardegna", "http://webgis.regione.sardegna.it/geoserver/wfs?service=WFS&request=GetCapabilities");
         wfsList.put("Torino - Votazioni", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc107_bagni?service=WFS&request=getCapabilities");
@@ -140,8 +140,9 @@ public class WFSClientMainActivity extends Activity {
 	public void resetConnection(View v){
 		startConnection();
 	}
+
 	/**
-	 * Classe asincrona per la connesione al WFS
+	 * Classe asincrona per la connesione al WFS. Ha il compito di scaricare le capabilities del WFS.
 	 *
 	 */
 	private class ConnectToWFS extends MyAsyncTask <String,Integer,String>{
@@ -169,14 +170,18 @@ public class WFSClientMainActivity extends Activity {
                 }
                 return result;
 			} catch (IOException e) {
-				return getResources().getString(R.string.connection_error);
+                showError("Error", "A connection error occurred.");
 			} catch (Exception e) {
-                return "Errore sconosciuto";
+                showError("Error", "An unknown error occurred.");
+                e.printStackTrace();
             }
+
+            return "";
 		}
 
 		protected void onPostExecute(String result) {
-            if (feature == null) {
+            if (feature == null || feature.size() == 0) {
+                showError("Error", "An error occurred when trying to load the capabilities. No capability available.");
                 return;
             }
             String baseUrl = feature.get(0);
@@ -199,7 +204,7 @@ public class WFSClientMainActivity extends Activity {
     }//end classe task WFS
 
 	/**
-	 * Classe asincrona per effettuare il parser del gml
+	 * Classe asincrona per effettuare il parser del gml. Ha il compito di disegnare una singola capability.
 	 */
 	private class DownloadXmlTask extends MyAsyncTask <String,Integer,String>{
 
@@ -226,11 +231,16 @@ public class WFSClientMainActivity extends Activity {
                 }
                 return result;
 			} catch (IOException e) {
+                showError("Error", "A connection error occurred.");
 				return getResources().getString(R.string.connection_error);
 			} catch (Exception e) {
-				return getResources().getString(R.string.xml_error);
+				showError("Error", "An unknown error occurred.");
+                e.printStackTrace();
 			}
+
+            return "";
 		}
+
 		//Verr� eseguito al completamento di loadXmlFronNetwork
 		//per mostare all�utente il file scaricato.
 		protected void onPostExecute(String result) {
@@ -265,7 +275,6 @@ public class WFSClientMainActivity extends Activity {
 		InputStream stream = conn.getInputStream();
 
         if (conn.getContentLength() == -1) {
-            //TODO: Set indeterminate
 
             return stream;
         }
