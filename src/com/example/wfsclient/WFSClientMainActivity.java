@@ -18,6 +18,8 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -41,6 +43,7 @@ public class WFSClientMainActivity extends Activity {
 	private LinkedList<Object> listaOggetti=new LinkedList<Object>();
 	private boolean disegna=false;
     private List<Layer> currentLayers;
+	private ProgressDialog progressDialog;
 
 	//WFS NSIDC
     //GOOD BUFFER: 10000
@@ -76,6 +79,12 @@ public class WFSClientMainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_wfsclient_main);
         createMenuEntries();
+		this.progressDialog = new ProgressDialog(this);
+		this.progressDialog.setCancelable(false);
+		this.progressDialog.setMax(100);
+		this.progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		this.progressDialog.setTitle("Attendere");
+		this.progressDialog.setMessage("Operazione in corso...");
 	}
 
 	@Override
