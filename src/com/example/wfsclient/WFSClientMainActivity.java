@@ -26,6 +26,7 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -44,6 +45,7 @@ public class WFSClientMainActivity extends Activity {
 	private boolean disegna=false;
     private List<Layer> currentLayers;
 	private ProgressDialog progressDialog;
+    private ProgressDialog dlProgressDialog;
 
 	//WFS NSIDC
     //GOOD BUFFER: 10000
@@ -84,7 +86,12 @@ public class WFSClientMainActivity extends Activity {
 		this.progressDialog.setMax(100);
 		this.progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		this.progressDialog.setTitle("Attendere");
-		this.progressDialog.setMessage("Operazione in corso...");
+		this.progressDialog.setMessage("Effettuando il parsing...");
+        this.dlProgressDialog = new ProgressDialog(this);
+        this.dlProgressDialog.setMessage("Scaricando i dati...");
+        this.dlProgressDialog.setTitle("Attendere");
+        this.dlProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        this.dlProgressDialog.setIndeterminate(true);
 	}
 
 	@Override
@@ -216,11 +223,46 @@ public class WFSClientMainActivity extends Activity {
                 String result ="";
 
                 try{
+
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            dlProgressDialog.show();
+                        }
+                    });
                     stream=downloadUrl(urlString, this);
                     if(!disegna)
                         result=XMLParser.parse(stream);
                     else{
-                        listaOggetti=XMLParserDraw.parse(stream);
+
+                        final XMLParserDraw xmlParserDraw = new XMLParserDraw(stream, new ParserProgress() {
+                            @Override
+                            public void updateDialog(final int current, int total) {
+//                                int h = current*100;
+//                                final int percent =  (int) Math.round(h/total);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        progressDialog.setProgress(current);
+                                    }
+                                });
+                            }
+                        });
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                dlProgressDialog.dismiss();
+                                progressDialog.setMax(xmlParserDraw.getTotalTags());
+                                progressDialog.show();
+                            }
+                        });
+                        listaOggetti=xmlParserDraw.parse();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                progressDialog.dismiss();
+                            }
+                        });
                     }
                 }catch(Exception e){
                     e.printStackTrace();
@@ -236,7 +278,7 @@ public class WFSClientMainActivity extends Activity {
 			} catch (Exception e) {
 				showError("Error", "An unknown error occurred.");
                 e.printStackTrace();
-			}
+			} finally {
 
             return "";
 		}
@@ -275,6 +317,7 @@ public class WFSClientMainActivity extends Activity {
 		InputStream stream = conn.getInputStream();
 
         if (conn.getContentLength() == -1) {
+            //TODO: Set indeterminate
 
             return stream;
         }
@@ -428,6 +471,10 @@ public class WFSClientMainActivity extends Activity {
             default:
                 return false;
         }
+    }
+
+    public interface ParserProgress {
+        public void updateDialog(int current, int total);
     }
 
     private List<Geometry> getGeometriesFromLayer(Layer pLayer, String[] pIds) {
