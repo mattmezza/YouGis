@@ -123,8 +123,7 @@ public class DrawView extends View {
 
         double fromX = (this.mPosX-canvas.getWidth()/2)/canvas.getDensity();
         double toX = (this.mPosX+canvas.getWidth()/2)/canvas.getDensity();
-        LOGGER.info("From: " + fromX +
-                ", to:" + toX);
+
         paint.setStyle(Paint.Style.STROKE);
         for (Layer layer : this.lista) {
             for (Geometry geometry : layer.getGeometries()) {
