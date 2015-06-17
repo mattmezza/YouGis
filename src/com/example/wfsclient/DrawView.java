@@ -142,7 +142,7 @@ public class DrawView extends View {
 	}
 
     private void drawPolygon(Polygon o, Canvas canvas, Paint paint) {
-        paint.setStyle(Paint.Style.FILL_AND_STROKE);
+        paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.rgb(o.getNumPoints() % 255, (int)o.getArea() % 255, o.getBoundaryDimension() % 255));
         Path polygonPath = new Path();
         Collection<Object> holeVerticesCollection= new LinkedList<Object>();
