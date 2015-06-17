@@ -18,7 +18,6 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.net.ConnectivityManager;
@@ -26,7 +25,6 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -59,6 +57,8 @@ public class WFSClientMainActivity extends Activity {
 	private List<String> feature;//l'index 0 contiene l'ind del wfs
 	private String request="";
 	private boolean requestBoolean=false;
+    private boolean inDrawView;
+    private DrawView drawView;
 
     private void createMenuEntries() {
         wfsList = new HashMap<String, String>();
@@ -72,6 +72,8 @@ public class WFSClientMainActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+        this.inDrawView = false;
+        this.drawView = null;
 		setContentView(R.layout.activity_wfsclient_main);
         createMenuEntries();
 		this.progressDialog = new ProgressDialog(this);
@@ -312,8 +314,6 @@ public class WFSClientMainActivity extends Activity {
 		InputStream stream = conn.getInputStream();
 
         if (conn.getContentLength() == -1) {
-            //TODO: Set indeterminate
-
             return stream;
         }
 
@@ -345,13 +345,16 @@ public class WFSClientMainActivity extends Activity {
         layers.add(standard);
 
         this.currentLayers = layers;
-		setContentView(new DrawView(this, layers));
+
+        this.drawView = new DrawView(this, layers);
+		setContentView(this.drawView);
+        this.inDrawView = true;
 	}
 
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (this.currentLayers == null) {
+        if (!this.inDrawView) {
             if (item.getItemId() == R.id.action_settings) {
                 final String[] items = new String[wfsList.keySet().size()];
 
@@ -422,6 +425,12 @@ public class WFSClientMainActivity extends Activity {
                         } catch (ArrayIndexOutOfBoundsException e) {
                             showError("Error", "ID not valid!");
                             return;
+                        } catch (IndexOutOfBoundsException e) {
+                            showError("Error", "ID not valid!");
+                            return;
+                        } catch (Exception e) {
+                            showError("Error", "Unknown error. Message: " + e.getMessage());
+                            return;
                         }
 
                         layer.addGeometry(layer.applyBuffers(elements, distance));
@@ -452,6 +461,12 @@ public class WFSClientMainActivity extends Activity {
                         } catch (ArrayIndexOutOfBoundsException e) {
                             showError("Error", "ID not valid!");
                             return;
+                        } catch (IndexOutOfBoundsException e) {
+                            showError("Error", "ID not valid!");
+                            return;
+                        } catch (Exception e) {
+                            showError("Error", "Unknown error. Message: " + e.getMessage());
+                            return;
                         }
 
                         layer.addGeometry(layer.applyIntersection(elements));
@@ -466,6 +481,17 @@ public class WFSClientMainActivity extends Activity {
             default:
                 return false;
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (this.inDrawView) {
+            setContentView(R.layout.activity_wfsclient_main);
+            this.inDrawView = false;
+            this.drawView = null;
+            this.requestBoolean = false;
+        } else
+            super.onBackPressed();
     }
 
     public interface ParserProgress {
