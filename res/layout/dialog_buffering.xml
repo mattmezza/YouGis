@@ -23,7 +23,7 @@
             android:ems="10"
             android:id="@+id/bufferingDistance"
             android:layout_weight="1"
-            android:hint="Distance"
+            android:hint="Distance (in meters)"
             android:password="false"
             android:phoneNumber="false"
             android:numeric="integer" />
