@@ -11,6 +11,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiPoint;
+import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 import android.content.Context;
@@ -113,19 +114,35 @@ public class DrawView extends View {
         paint.setStyle(Paint.Style.STROKE);
         for (Layer layer : this.lista) {
             for (Geometry geometry : layer.getGeometries()) {
-                if (geometry instanceof Point) {
-                    drawPoint((Point) geometry, canvas, paint);
-                } else if (geometry instanceof LineString) {
-                    drawLineString((LineString) geometry, canvas, paint);
-                } else if (geometry instanceof LinearRing) {
-                    drawLinearRing((LinearRing) geometry, canvas, paint);
-                } else if (geometry instanceof Polygon) {
-                    drawPolygon((Polygon)geometry, canvas, paint);
-                } else if (geometry instanceof MultiPoint)
-                    drawMultiPoint((MultiPoint)geometry, canvas, paint);
+                drawGeometry(geometry, canvas, paint);
             }
         }
 	}
+
+    public void drawGeometry(Geometry geometry, Canvas canvas, Paint paint) {
+        if (geometry instanceof Point) {
+            drawPoint((Point) geometry, canvas, paint);
+        } else if (geometry instanceof LineString) {
+            drawLineString((LineString) geometry, canvas, paint);
+        } else if (geometry instanceof LinearRing) {
+            drawLinearRing((LinearRing) geometry, canvas, paint);
+        } else if (geometry instanceof Polygon) {
+            drawPolygon((Polygon) geometry, canvas, paint);
+        } else if (geometry instanceof MultiPoint) {
+            drawMultiPoint((MultiPoint) geometry, canvas, paint);
+        } else if (geometry instanceof MultiPolygon) {
+            drawMultiPolygon((MultiPolygon) geometry, canvas, paint);
+        } else {
+            LOGGER.info("Unable to draw a " + geometry.getClass().toString());
+        }
+    }
+
+    private void drawMultiPolygon(MultiPolygon o, Canvas canvas, Paint paint) {
+        int size = o.getNumGeometries();
+        for (int i = 0; i < size; i++)
+            this.drawGeometry(o.getGeometryN(i), canvas, paint);
+
+    }
 
     private void drawPolygon(Polygon o, Canvas canvas, Paint paint) {
         paint.setStyle(Paint.Style.FILL);
