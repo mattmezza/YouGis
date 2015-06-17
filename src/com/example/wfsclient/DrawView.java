@@ -51,20 +51,6 @@ public class DrawView extends View {
 
         centerX = (float)lista.get(0).getGeometries().get(0).getCoordinates()[0].x;
         centerY = (float)lista.get(0).getGeometries().get(0).getCoordinates()[0].y;
-
-        /*
-        Geometry buffer1 = this.applyBuffers(lista.get(166), 30000);
-        Geometry buffer2 = this.applyBuffers(lista, 30000);
-
-        //lista.add(buffer1);
-        lista.add(buffer2);
-
-        //List<Geometry> toIntersect = new ArrayList<Geometry>();
-        //toIntersect.add(buffer1);
-        //toIntersect.add(buffer2);
-
-        //lista.add(this.applyIntersection(toIntersect));
-        */
 	}
 
 	@Override
@@ -160,6 +146,8 @@ public class DrawView extends View {
         }else{
             canvas.drawPath(polygonPath, paint);
         }
+
+        paint.setStyle(Paint.Style.STROKE);
     }
 
     private Path toPath(Coordinate[] coordinates ) {
