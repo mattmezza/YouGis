@@ -24,6 +24,7 @@ public class XMLParserDraw {
 	private InputStream parsing;
 	private WFSClientMainActivity.ParserProgress progressDelegate;
 	private int totalTags;
+    private int currentTag;
 
 	public XMLParserDraw(InputStream in, WFSClientMainActivity.ParserProgress progressDelegate) throws IOException, XmlPullParserException {
 		this.progressDelegate = progressDelegate;
@@ -58,7 +59,7 @@ public class XMLParserDraw {
 	
 	public LinkedList<Object> parse() {
 		int event;
-		int currentTag = 0;
+		this.currentTag = 0;
 		String stringaWKT="";
 		Geometry g1;
 		LinkedList l=new LinkedList();
@@ -80,7 +81,7 @@ public class XMLParserDraw {
 						if(progressDelegate!=null)
 							progressDelegate.updateDialog(currentTag, this.totalTags);
 						if(name.equals("gml:Point")){
-							event=parser.nextTag();
+							this.nextTag();
 							name=parser.getName();
 							if(name.equals("gml:pos")){//CONTROLLA LA READ
 								coordinate=parser.nextText();
@@ -89,13 +90,13 @@ public class XMLParserDraw {
 							}
 						}
 						else if(name.equals("ms:NAME")){
-							Object userData =parser.nextText();
+							Object userData = parser.nextText();
 							g1=(Geometry)l.removeLast();
 							g1.setUserData(userData);
 							l.add(g1);
 						}
 						else if(name.equals("gml:LineString")){
-							event=parser.nextTag();
+							event = this.nextTag();
 							name=parser.getName();
 							if(name.equals("gml:posList")){//AGGIUNGERE CONTROLLO SULL' ATTR
 								coordinate=parser.nextText();
@@ -105,7 +106,7 @@ public class XMLParserDraw {
 							}
 						}
 						else if(name.equals("gml:LinearRing")){
-							event=parser.nextTag();
+							event=this.nextTag();
 							name=parser.getName();
 							if(name.equals("gml:posList")){//AGGIUNGERE CONTROLLO SULL' ATTR
 								coordinate=parser.nextText();
@@ -115,13 +116,13 @@ public class XMLParserDraw {
 							}
 						}
 						else if(name.equals("gml:polygon")){
-							event=parser.nextTag();
+							event=this.nextTag();
 							name=parser.getName();
 							if(name.equals("gml:outerBoundaryIs")){
-								event=parser.nextTag();
+								event=this.nextTag();
 								name=parser.getName();
 								if(name.equals("gml:LinearRing")){
-									event=parser.nextTag();
+									event=this.nextTag();
 									name=parser.getName();
 									if(name.equals("gml:posList")){
 										coordinate=parser.nextText();
@@ -145,6 +146,12 @@ public class XMLParserDraw {
 		return l;
 	}
 
+    private int nextTag() throws XmlPullParserException, IOException {
+        int result = this.parser.nextTag();
+        this.currentTag++;
+        return result;
+    }
+
 	private int countObject(XmlPullParser parser) throws XmlPullParserException, IOException {
 		int event;
 		int counter = 0;
@@ -152,7 +159,7 @@ public class XMLParserDraw {
 		while(event!=XmlPullParser.END_DOCUMENT) {
 			switch (event) {
 				case XmlPullParser.START_TAG:
-					counter++;
+                    counter++;
 					break;
 			}
 			event = parser.next();

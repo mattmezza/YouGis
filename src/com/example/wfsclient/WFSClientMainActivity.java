@@ -16,12 +16,14 @@ import java.util.logging.Logger;
 import com.example.wfsclient.layers.Layer;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.operation.distance.DistanceOp;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
@@ -59,14 +61,17 @@ public class WFSClientMainActivity extends Activity {
 	private boolean requestBoolean=false;
     private boolean inDrawView;
     private DrawView drawView;
+    private ProgressDialog opProgressDialog;
 
     private void createMenuEntries() {
         wfsList = new HashMap<String, String>();
         wfsList.put("North atlas", "http://nsidc.org/cgi-bin/atlas_north?service=WFS&request=GetCapabilities");
-        wfsList.put("Zone sismiche", "http://wms.pcn.minambiente.it/ogc?map=/ms_ogc/wfs/Zone_sismogenetiche_ZS9.map");
+        wfsList.put("Torino - Azzonamenti sanitari", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc35_azzonamenti_sanitari?service=WFS&request=getCapabilities");
+        wfsList.put("Torino - Carceri", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc122_carceri?service=WFS&request=getCapabilities");
+        wfsList.put("Torino - Polizia amministrativa", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc48_polizia_amm?service=WFS&request=getCapabilities");
         wfsList.put("Torino", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc116_chiese?service=WFS&request=getCapabilities");
         wfsList.put("Sardegna", "http://webgis.regione.sardegna.it/geoserver/wfs?service=WFS&request=GetCapabilities");
-        wfsList.put("Torino - Votazioni", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc107_bagni?service=WFS&request=getCapabilities");
+        wfsList.put("Atlanta", "http://www.geoportal.rgurs.org/erdas-apollo/vector/ATLGML3_SHAPE?service=WFS&request=GetCapabilities");
     }
 
 	@Override
@@ -82,11 +87,19 @@ public class WFSClientMainActivity extends Activity {
 		this.progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		this.progressDialog.setTitle("Attendere");
 		this.progressDialog.setMessage("Effettuando il parsing...");
+
         this.dlProgressDialog = new ProgressDialog(this);
-        this.dlProgressDialog.setMessage("Scaricando i dati...");
+        this.dlProgressDialog.setCancelable(false);
         this.dlProgressDialog.setTitle("Attendere");
         this.dlProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         this.dlProgressDialog.setIndeterminate(true);
+
+        this.opProgressDialog = new ProgressDialog(this);
+        this.opProgressDialog.setMessage("");
+        this.opProgressDialog.setTitle("Attendere");
+        this.opProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        this.opProgressDialog.setCancelable(false);
+        this.opProgressDialog.setIndeterminate(true);
 	}
 
 	@Override
@@ -147,41 +160,57 @@ public class WFSClientMainActivity extends Activity {
 	 * Classe asincrona per la connesione al WFS. Ha il compito di scaricare le capabilities del WFS.
 	 *
 	 */
-	private class ConnectToWFS extends MyAsyncTask <String,Integer,String>{
+	private class ConnectToWFS extends MyAsyncTask <String,Integer,Boolean>{
 
-		protected String doInBackground(String... urls) {
+		protected Boolean doInBackground(String... urls) {
+            String urlString = urls[0];
+            InputStream stream = null;
+            String result ="";
+            //aggiungo la versione del wfs all'url
+            urlString = urlString+"&version="+wfsVersion;
 			try {
-                String urlString = urls[0];
-                InputStream stream = null;
-                String result ="";
-                //aggiungo la versione del wfs all'url
-                urlString = urlString+"&version="+wfsVersion;
-                try {
-                    stream = downloadUrl(urlString, this);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        dlProgressDialog.setMessage("Connessione al WFS in corso...");
+                        dlProgressDialog.show();
+                    }
+                });
+                stream = downloadUrl(urlString, this);
+                feature = ParserCapabilities.parse(stream);
 
-                    feature = ParserCapabilities.parse(stream);
-                } catch (SocketTimeoutException e) {
-                    throw new IOException(e.getMessage());
-                }catch(Exception e){
-                    throw new IOException(e.getMessage());
-                }finally{
-                    // Chiusura dell'INPUT STREAM
-                    if (stream != null) {
+                return true;
+            } catch (SocketTimeoutException e) {
+                showError("Error", "Connection timeout. Please, try later.");
+                return false;
+            }catch(Exception e){
+                showError("Error", "An unknown error occurred. Please, check the log.");
+                e.printStackTrace();
+                return false;
+            }finally{
+                // Chiusura dell'INPUT STREAM
+                if (stream != null) {
+                    try {
                         stream.close();
+                    } catch (IOException e) {
+
                     }
                 }
-                return result;
-			} catch (IOException e) {
-                showError("Error", "A connection error occurred.");
-			} catch (Exception e) {
-                showError("Error", "An unknown error occurred.");
-                e.printStackTrace();
-            }
 
-            return "";
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (dlProgressDialog.isShowing())
+                            dlProgressDialog.dismiss();
+                    }
+                });
+            }
 		}
 
-		protected void onPostExecute(String result) {
+		protected void onPostExecute(Boolean result) {
+            if (!result)
+                return;
+
             if (feature == null || feature.size() == 0) {
                 showError("Error", "An error occurred when trying to load the capabilities. No capability available.");
                 return;
@@ -208,86 +237,96 @@ public class WFSClientMainActivity extends Activity {
 	/**
 	 * Classe asincrona per effettuare il parser del gml. Ha il compito di disegnare una singola capability.
 	 */
-	private class DownloadXmlTask extends MyAsyncTask <String,Integer,String>{
+	private class DownloadXmlTask extends MyAsyncTask <String,Integer,Boolean>{
 
 		@Override
-		protected String doInBackground(String... urls) {
+		protected Boolean doInBackground(String... urls) {
+            String urlString = urls[0];
+            InputStream stream = null;
+            String result ="";
+
 			try {
-                String urlString = urls[0];
-                InputStream stream = null;
-                String result ="";
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        dlProgressDialog.setMessage("Download delle feature in corso...");
+                        dlProgressDialog.show();
+                    }
+                });
+                stream=downloadUrl(urlString, this);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        dlProgressDialog.dismiss();
+                    }
+                });
+                if(!disegna)
+                    result=XMLParser.parse(stream);
+                else{
 
-                try{
-
+                    final XMLParserDraw xmlParserDraw = new XMLParserDraw(stream, new ParserProgress() {
+                        @Override
+                        public void updateDialog(final int current, int total) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    progressDialog.setProgress(current);
+                                }
+                            });
+                        }
+                    });
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            dlProgressDialog.show();
+                            dlProgressDialog.dismiss();
+                            progressDialog.setMax(xmlParserDraw.getTotalTags());
+                            progressDialog.show();
                         }
                     });
-                    stream=downloadUrl(urlString, this);
-                    if(!disegna)
-                        result=XMLParser.parse(stream);
-                    else{
+                    listaOggetti=xmlParserDraw.parse();
+                }
 
-                        final XMLParserDraw xmlParserDraw = new XMLParserDraw(stream, new ParserProgress() {
-                            @Override
-                            public void updateDialog(final int current, int total) {
-//                                int h = current*100;
-//                                final int percent =  (int) Math.round(h/total);
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        progressDialog.setProgress(current);
-                                    }
-                                });
-                            }
-                        });
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                dlProgressDialog.dismiss();
-                                progressDialog.setMax(xmlParserDraw.getTotalTags());
-                                progressDialog.show();
-                            }
-                        });
-                        listaOggetti=xmlParserDraw.parse();
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                progressDialog.dismiss();
-                            }
-                        });
-                    }
-                }catch(Exception e){
-                    e.printStackTrace();
-                }finally{
-                    if (stream != null) {
+                return true;
+            } catch (IOException e) {
+                requestBoolean = false;
+                showError("Error", "A connection error occurred.");
+                return false;
+            }catch(Exception e){
+                requestBoolean = false;
+                showError("Error", "An unknown error occurred. Please, check the log.");
+                e.printStackTrace();
+                return false;
+            }finally{
+                if (stream != null) {
+                    try {
                         stream.close();
+                    } catch (IOException e) {
                     }
                 }
-                return result;
-			} catch (IOException e) {
-                showError("Error", "A connection error occurred.");
-				return getResources().getString(R.string.connection_error);
-			} catch (Exception e) {
-				showError("Error", "An unknown error occurred.");
-                e.printStackTrace();
-			} finally {
 
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (dlProgressDialog.isShowing())
+                            dlProgressDialog.dismiss();
+                        if (progressDialog.isShowing())
+                            progressDialog.dismiss();
+                    }
+                });
             }
-
-            return "";
 		}
 
 		//Verr� eseguito al completamento di loadXmlFronNetwork
 		//per mostare all�utente il file scaricato.
-		protected void onPostExecute(String result) {
+		protected void onPostExecute(Boolean result) {
+            if (!result)
+                return;
 			setContentView(R.layout.activity_wfsclient_main);
             try {
                 LOGGER.info("INVOCO LA VIEW");
                 disegnaOnView(listaOggetti);
             } catch (ParseException e) {
+                showError("Error", "An unknown error occurred. Please, check the log.");
                 e.printStackTrace();
             }
         }
@@ -300,8 +339,163 @@ public class WFSClientMainActivity extends Activity {
 
     }
 
+    private class BufferingTask extends MyAsyncTask <Object,Integer,Geometry>{
+        private Layer layer;
+        @Override
+        protected Geometry doInBackground(Object... params) {
+            String distanceText;
+            String idsText;
+
+            if (params[0] instanceof String && params[1] instanceof String && params[2] instanceof Layer) {
+                distanceText = (String) params[0];
+                idsText = (String) params[1];
+                layer = (Layer) params[2];
+            } else {
+                LOGGER.info("Error - incorrect parameters!");
+                return null;
+            }
+
+            int distance;
+            try {
+                distance = Integer.parseInt(distanceText);
+            } catch (NumberFormatException e) {
+                showError("Error", "Distance must be a number!");
+                return null;
+            }
+
+            String[] parts = idsText.split("\\,");
+            List<Geometry> elements;
+            try {
+                elements = getGeometriesFromLayer(layer, parts);
+            } catch (NumberFormatException e) {
+                showError("Error", "Wrong format for ID list!");
+                return null;
+            } catch (ArrayIndexOutOfBoundsException e) {
+                showError("Error", "ID not valid!");
+                return null;
+            } catch (IndexOutOfBoundsException e) {
+                showError("Error", "ID not valid!");
+                return null;
+            } catch (Exception e) {
+                showError("Error", "Unknown error. Message: " + e.getMessage());
+                return null;
+            }
+
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    opProgressDialog.setMessage("Buffering in corso...");
+
+                    opProgressDialog.show();
+                }
+            });
+
+            Geometry buffer;
+            try {
+                buffer = layer.applyBuffers(elements, distance);
+            } catch (InterruptedException e) {
+                return null;
+            }
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    opProgressDialog.dismiss();
+                }
+            });
+
+            return buffer;
+        }
+
+        @Override
+        protected void onPostExecute(Geometry geometry) {
+            if (geometry != null)
+                layer.addGeometry(geometry);
+        }
+
+        @Override
+        protected void onCancelled() {
+            showError("Interrotto", "Operazione interrotta correttamente");
+        }
+    }
+
+    private class IntersectionTask extends MyAsyncTask <Object,Integer,Geometry>{
+        private Layer layer;
+        @Override
+        protected Geometry doInBackground(Object... params) {
+            String idsText;
+
+            if (params[0] instanceof String && params[1] instanceof Layer) {
+                idsText = (String) params[0];
+                layer = (Layer) params[1];
+            } else {
+                LOGGER.info("Error - incorrect parameters!");
+                return null;
+            }
+
+            String[] parts = idsText.split("\\,");
+            List<Geometry> elements;
+            try {
+                elements = getGeometriesFromLayer(layer, parts);
+            } catch (NumberFormatException e) {
+                showError("Error", "Wrong format for ID list!");
+                return null;
+            } catch (ArrayIndexOutOfBoundsException e) {
+                showError("Error", "ID not valid!");
+                return null;
+            } catch (IndexOutOfBoundsException e) {
+                showError("Error", "ID not valid!");
+                return null;
+            } catch (Exception e) {
+                showError("Error", "Unknown error. Message: " + e.getMessage());
+                return null;
+            }
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    opProgressDialog.setMessage("Intersezione in corso...");
+
+                    opProgressDialog.show();
+                }
+            });
+
+            Geometry intersection = null;
+            try {
+                intersection = layer.applyIntersection(elements);
+            } catch (InterruptedException e) {
+                return null;
+            }
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    opProgressDialog.dismiss();
+                }
+            });
+
+            for (Geometry toRemove : elements)
+                layer.removeGeometry(toRemove);
+
+            return intersection;
+        }
+
+        @Override
+        protected void onPostExecute(Geometry geometry) {
+            if (geometry != null) {
+                layer.addGeometry(geometry);
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            showError("Interrotto", "Operazione interrotta correttamente");
+        }
+    }
+
 	/**Si collega all'indirizzo dell'url*/
-	private InputStream downloadUrl(String urlString, MyAsyncTask<String, Integer, String> pAsyncTask) throws IOException {
+	private InputStream downloadUrl(String urlString, MyAsyncTask<String, Integer, Boolean> pAsyncTask) throws IOException {
 		URL url = new URL(urlString);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.setReadTimeout(10000 /* milliseconds */);
@@ -313,21 +507,7 @@ public class WFSClientMainActivity extends Activity {
 
 		InputStream stream = conn.getInputStream();
 
-        if (conn.getContentLength() == -1) {
-            return stream;
-        }
-
-        int currentByte = 0;
-        byte[] result = new byte[conn.getContentLength()];
-        int i = 0;
-        while ((currentByte = stream.read()) != -1) {
-            result[i] = (byte)currentByte;
-            pAsyncTask.publish((int) (((float) i / result.length) * 100));
-            i++;
-        }
-
-        InputStream newStream = new ByteArrayInputStream(result);
-		return newStream;
+        return stream;
 	}
 	/**Flag per distinguere quale bottone � stato utilizzato*/
 	public void disegna(View view){
@@ -407,33 +587,10 @@ public class WFSClientMainActivity extends Activity {
 
                 alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        int distance;
-                        try {
-                            distance = Integer.parseInt(distanceText.getText().toString());
-                        } catch (NumberFormatException e) {
-                            showError("Error", "Distance must be a number!");
-                            return;
-                        }
-
-                        String[] parts = idsText.getText().toString().split("\\,");
-                        List<Geometry> elements;
-                        try {
-                            elements = getGeometriesFromLayer(layer, parts);
-                        } catch (NumberFormatException e) {
-                            showError("Error", "Wrong format for ID list!");
-                            return;
-                        } catch (ArrayIndexOutOfBoundsException e) {
-                            showError("Error", "ID not valid!");
-                            return;
-                        } catch (IndexOutOfBoundsException e) {
-                            showError("Error", "ID not valid!");
-                            return;
-                        } catch (Exception e) {
-                            showError("Error", "Unknown error. Message: " + e.getMessage());
-                            return;
-                        }
-
-                        layer.addGeometry(layer.applyBuffers(elements, distance));
+                        new BufferingTask().execute(
+                                distanceText.getText().toString(),
+                                idsText.getText().toString(),
+                                layer);
                     }
                 });
 
@@ -451,28 +608,9 @@ public class WFSClientMainActivity extends Activity {
 
                 alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
-                        String[] parts = idsText.getText().toString().split("\\,");
-                        List<Geometry> elements;
-                        try {
-                            elements = getGeometriesFromLayer(layer, parts);
-                        } catch (NumberFormatException e) {
-                            showError("Error", "Wrong format for ID list!");
-                            return;
-                        } catch (ArrayIndexOutOfBoundsException e) {
-                            showError("Error", "ID not valid!");
-                            return;
-                        } catch (IndexOutOfBoundsException e) {
-                            showError("Error", "ID not valid!");
-                            return;
-                        } catch (Exception e) {
-                            showError("Error", "Unknown error. Message: " + e.getMessage());
-                            return;
-                        }
-
-                        layer.addGeometry(layer.applyIntersection(elements));
-
-                        for (Geometry toRemove : elements)
-                            layer.removeGeometry(toRemove);
+                        new IntersectionTask().execute(
+                                idsText.getText().toString(),
+                                layer);
                     }
                 });
 
@@ -508,15 +646,21 @@ public class WFSClientMainActivity extends Activity {
         return elements;
     }
 
-    private void showError(String pTitle, String pMessage) {
-        new AlertDialog.Builder(this)
-                .setTitle(pTitle)
-                .setMessage(pMessage)
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
-                    }
-                })
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .show();
+    private void showError(final String pTitle, final String pMessage) {
+        final Activity context = this;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                new AlertDialog.Builder(context)
+                        .setTitle(pTitle)
+                        .setMessage(pMessage)
+                        .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {
+                            }
+                        })
+                        .setIcon(android.R.drawable.ic_dialog_alert)
+                        .show();
+            }
+        });
     }
 }

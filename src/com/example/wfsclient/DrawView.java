@@ -50,8 +50,24 @@ public class DrawView extends View {
 
         lista = layers;
 
-        centerX = (float)lista.get(0).getGeometries().get(0).getCoordinates()[0].x;
-        centerY = (float)lista.get(0).getGeometries().get(0).getCoordinates()[0].y;
+        final DrawView thisView = this;
+
+        for (Layer layer : lista) {
+            layer.setListener(new Layer.LayerListener() {
+                @Override
+                public void onLayerChange() {
+                    thisView.postInvalidate();
+                }
+            });
+        }
+
+        if (lista.size() == 0 || lista.get(0).getGeometries().size() == 0 || lista.get(0).getGeometries().get(0).getCoordinates().length == 0) {
+            centerX = 0F;
+            centerY = 0F;
+        } else {
+            centerX = (float) lista.get(0).getGeometries().get(0).getCoordinates()[0].x;
+            centerY = (float) lista.get(0).getGeometries().get(0).getCoordinates()[0].y;
+        }
 	}
 
 	@Override
