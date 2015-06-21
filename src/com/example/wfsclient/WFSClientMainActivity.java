@@ -1,5 +1,4 @@
 package com.example.wfsclient;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -16,14 +15,12 @@ import java.util.logging.Logger;
 import com.example.wfsclient.layers.Layer;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
-import com.vividsolutions.jts.operation.distance.DistanceOp;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Context;
@@ -52,10 +49,7 @@ public class WFSClientMainActivity extends Activity {
 	private String defaultwfs = "http://nsidc.org/cgi-bin/atlas_north?service=WFS&request=GetCapabilities";
     private Map<String, String> wfsList;
 
-    String featureName = null;
-
 	private static String wfsVersion = "1.1.0";
-	private URL serviceURL = null;
 	private List<String> feature;//l'index 0 contiene l'ind del wfs
 	private String request="";
 	private boolean requestBoolean=false;
@@ -165,7 +159,6 @@ public class WFSClientMainActivity extends Activity {
 		protected Boolean doInBackground(String... urls) {
             String urlString = urls[0];
             InputStream stream = null;
-            String result ="";
             //aggiungo la versione del wfs all'url
             urlString = urlString+"&version="+wfsVersion;
 			try {
@@ -176,15 +169,15 @@ public class WFSClientMainActivity extends Activity {
                         dlProgressDialog.show();
                     }
                 });
-                stream = downloadUrl(urlString, this);
+                stream = downloadUrl(urlString);
                 feature = ParserCapabilities.parse(stream);
 
                 return true;
             } catch (SocketTimeoutException e) {
-                showError("Error", "Connection timeout. Please, try later.");
+                showError("Errore", "Connessione scaduta. Riprovare più tardi.");
                 return false;
             }catch(Exception e){
-                showError("Error", "An unknown error occurred. Please, check the log.");
+                showError("Errore", "Errore sconosciuto. Controllare il log per ulteriori dettagli.");
                 e.printStackTrace();
                 return false;
             }finally{
@@ -193,7 +186,7 @@ public class WFSClientMainActivity extends Activity {
                     try {
                         stream.close();
                     } catch (IOException e) {
-
+                        LOGGER.info(e.getMessage());
                     }
                 }
 
@@ -212,18 +205,11 @@ public class WFSClientMainActivity extends Activity {
                 return;
 
             if (feature == null || feature.size() == 0) {
-                showError("Error", "An error occurred when trying to load the capabilities. No capability available.");
+                showError("Errore", "Nessuna feature disponibile per questo WFS.");
                 return;
             }
-            String baseUrl = feature.get(0);
 
-			request = baseUrl +
-                    (baseUrl.endsWith("?") ? "" : "?") +
-                    "service=WFS&version=" + wfsVersion +
-                    "&request=GetFeature&typeName=" + feature.get(1);
-			LOGGER.info("REQUEST 1 " + feature.toString());
-			requestBoolean=true;
-			startConnection();//Ricontrolla la connessione e avvia il download della feature
+            showFeatureSelector();
 		}
 
         protected void onProgressUpdate(Integer... values) {
@@ -243,7 +229,6 @@ public class WFSClientMainActivity extends Activity {
 		protected Boolean doInBackground(String... urls) {
             String urlString = urls[0];
             InputStream stream = null;
-            String result ="";
 
 			try {
                 runOnUiThread(new Runnable() {
@@ -253,17 +238,19 @@ public class WFSClientMainActivity extends Activity {
                         dlProgressDialog.show();
                     }
                 });
-                stream=downloadUrl(urlString, this);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        dlProgressDialog.dismiss();
-                    }
-                });
+                stream=downloadUrl(urlString);
                 if(!disegna)
-                    result=XMLParser.parse(stream);
+                    XMLParser.parse(stream);
                 else{
 
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            dlProgressDialog.dismiss();
+                            dlProgressDialog.setMessage("Analisi del file in corso...");
+                            dlProgressDialog.show();
+                        }
+                    });
                     final XMLParserDraw xmlParserDraw = new XMLParserDraw(stream, new ParserProgress() {
                         @Override
                         public void updateDialog(final int current, int total) {
@@ -275,6 +262,7 @@ public class WFSClientMainActivity extends Activity {
                             });
                         }
                     });
+
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -283,17 +271,18 @@ public class WFSClientMainActivity extends Activity {
                             progressDialog.show();
                         }
                     });
+
                     listaOggetti=xmlParserDraw.parse();
                 }
 
                 return true;
             } catch (IOException e) {
                 requestBoolean = false;
-                showError("Error", "A connection error occurred.");
+                showError("Error", "Errore di connessione.");
                 return false;
             }catch(Exception e){
                 requestBoolean = false;
-                showError("Error", "An unknown error occurred. Please, check the log.");
+                showError("Error", "Errore sconosciuto. Controllare il log per ulteriori dettagli.");
                 e.printStackTrace();
                 return false;
             }finally{
@@ -301,6 +290,7 @@ public class WFSClientMainActivity extends Activity {
                     try {
                         stream.close();
                     } catch (IOException e) {
+                        LOGGER.info(e.getMessage());
                     }
                 }
 
@@ -326,7 +316,7 @@ public class WFSClientMainActivity extends Activity {
                 LOGGER.info("INVOCO LA VIEW");
                 disegnaOnView(listaOggetti);
             } catch (ParseException e) {
-                showError("Error", "An unknown error occurred. Please, check the log.");
+                showError("Error", "Errore sconosciuto. Controllare il log per ulteriori dettagli.");
                 e.printStackTrace();
             }
         }
@@ -359,25 +349,26 @@ public class WFSClientMainActivity extends Activity {
             try {
                 distance = Integer.parseInt(distanceText);
             } catch (NumberFormatException e) {
-                showError("Error", "Distance must be a number!");
+                showError("Errore", "Inserire la distanza (valore numerico)");
                 return null;
             }
 
-            String[] parts = idsText.split("\\,");
+            String[] parts = idsText.split(",");
             List<Geometry> elements;
             try {
                 elements = getGeometriesFromLayer(layer, parts);
             } catch (NumberFormatException e) {
-                showError("Error", "Wrong format for ID list!");
+                showError("Errore", "Errore nel formato della lista di ID");
                 return null;
             } catch (ArrayIndexOutOfBoundsException e) {
-                showError("Error", "ID not valid!");
+                showError("Errore", "ID non validi (fuori dal range)");
                 return null;
             } catch (IndexOutOfBoundsException e) {
-                showError("Error", "ID not valid!");
+                showError("Errore", "ID non validi (fuori dal range)");
                 return null;
             } catch (Exception e) {
-                showError("Error", "Unknown error. Message: " + e.getMessage());
+                showError("Error", "Errore sconosciuto. Controllare il log per ulteriori dettagli");
+                e.printStackTrace();
                 return null;
             }
 
@@ -434,21 +425,22 @@ public class WFSClientMainActivity extends Activity {
                 return null;
             }
 
-            String[] parts = idsText.split("\\,");
+            String[] parts = idsText.split(",");
             List<Geometry> elements;
             try {
                 elements = getGeometriesFromLayer(layer, parts);
             } catch (NumberFormatException e) {
-                showError("Error", "Wrong format for ID list!");
+                showError("Errore", "Errore nel formato della lista di ID");
                 return null;
             } catch (ArrayIndexOutOfBoundsException e) {
-                showError("Error", "ID not valid!");
+                showError("Errore", "ID non validi (fuori dal range)");
                 return null;
             } catch (IndexOutOfBoundsException e) {
-                showError("Error", "ID not valid!");
+                showError("Errore", "ID non validi (fuori dal range)");
                 return null;
             } catch (Exception e) {
-                showError("Error", "Unknown error. Message: " + e.getMessage());
+                showError("Error", "Errore sconosciuto. Controllare il log per ulteriori dettagli");
+                e.printStackTrace();
                 return null;
             }
 
@@ -461,7 +453,7 @@ public class WFSClientMainActivity extends Activity {
                 }
             });
 
-            Geometry intersection = null;
+            Geometry intersection;
             try {
                 intersection = layer.applyIntersection(elements);
             } catch (InterruptedException e) {
@@ -495,7 +487,7 @@ public class WFSClientMainActivity extends Activity {
     }
 
 	/**Si collega all'indirizzo dell'url*/
-	private InputStream downloadUrl(String urlString, MyAsyncTask<String, Integer, Boolean> pAsyncTask) throws IOException {
+	private InputStream downloadUrl(String urlString) throws IOException {
 		URL url = new URL(urlString);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.setReadTimeout(10000 /* milliseconds */);
@@ -505,9 +497,7 @@ public class WFSClientMainActivity extends Activity {
 		// Starts the query
 		conn.connect();
 
-		InputStream stream = conn.getInputStream();
-
-        return stream;
+        return conn.getInputStream();
 	}
 	/**Flag per distinguere quale bottone � stato utilizzato*/
 	public void disegna(View view){
@@ -531,6 +521,29 @@ public class WFSClientMainActivity extends Activity {
         this.inDrawView = true;
 	}
 
+    public void showFeatureSelector() {
+        final String baseUrl = feature.get(0);
+
+        final String[] options = new String[feature.size()-1];
+
+        for (int i = 1; i < feature.size(); i++)
+            options[i-1] = feature.get(i);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Selezionare una feature");
+        builder.setItems(options, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int item) {
+                request = baseUrl +
+                        (baseUrl.endsWith("?") ? "" : "?") +
+                        "service=WFS&version=" + wfsVersion +
+                        "&request=GetFeature&typeName=" + options[item];
+                LOGGER.info("REQUEST " + item + feature.toString());
+                requestBoolean=true;
+                startConnection();//Ricontrolla la connessione e avvia il download della feature
+            }
+        }).show();
+    }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -549,7 +562,7 @@ public class WFSClientMainActivity extends Activity {
                 builder.setItems(items, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int item) {
                         defaultwfs = wfsList.get(items[item]);
-                        Toast.makeText(getApplicationContext(), "Selected WFS "+items[item], Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "Selezionato il WFS "+items[item], Toast.LENGTH_SHORT).show();
                     }
                 }).show();
 
@@ -575,7 +588,7 @@ public class WFSClientMainActivity extends Activity {
 
         switch (item.getItemId()) {
             case R.id.action_Buffer:
-                alert.setTitle("Buffering (0 to " + (layer.getGeometries().size()-1) +")");
+                alert.setTitle("Buffering (da 0 a " + (layer.getGeometries().size()-1) +")");
 
                 //Sets the layout
                 inflater = this.getLayoutInflater();
@@ -597,7 +610,7 @@ public class WFSClientMainActivity extends Activity {
                 alert.show();
                 return true;
             case R.id.action_Intersection:
-                alert.setTitle("Intersection (0 to " + (layer.getGeometries().size()-1) +")");
+                alert.setTitle("Intersezione (da 0 a " + (layer.getGeometries().size()-1) +")");
 
                 //Sets the layout
                 inflater = this.getLayoutInflater();

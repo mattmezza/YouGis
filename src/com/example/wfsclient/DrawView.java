@@ -155,14 +155,24 @@ public class DrawView extends View {
 
     private void drawMultiPolygon(MultiPolygon o, Canvas canvas, Paint paint) {
         int size = o.getNumGeometries();
-        for (int i = 0; i < size; i++)
-            this.drawGeometry(o.getGeometryN(i), canvas, paint);
+        int color = paint.getColor();
 
+        paint.setColor(Color.rgb(o.getNumPoints() % 255, (int)o.getArea() % 255, o.getBoundaryDimension() % 255));
+        for (int i = 0; i < size; i++) {
+            Geometry currentGeometry = o.getGeometryN(i);
+            if (currentGeometry instanceof Polygon) {
+                this.drawPolygon((Polygon)currentGeometry, canvas, paint, true);
+            }else
+                this.drawGeometry(o.getGeometryN(i), canvas, paint);
+        }
+
+        paint.setColor(color);
     }
 
-    private void drawPolygon(Polygon o, Canvas canvas, Paint paint) {
+    private void drawPolygon(Polygon o, Canvas canvas, Paint paint, boolean fixColor) {
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.rgb(o.getNumPoints() % 255, (int)o.getArea() % 255, o.getBoundaryDimension() % 255));
+        if (!fixColor)
+            paint.setColor(Color.rgb(o.getNumPoints() % 255, (int)o.getArea() % 255, o.getBoundaryDimension() % 255));
         Path polygonPath = new Path();
         Collection<Object> holeVerticesCollection= new LinkedList<Object>();
         polygonPath = toPath(o.getExteriorRing().getCoordinates());
@@ -181,6 +191,10 @@ public class DrawView extends View {
         }
 
         paint.setStyle(Paint.Style.STROKE);
+    }
+
+    private void drawPolygon(Polygon o, Canvas canvas, Paint paint) {
+        drawPolygon(o, canvas, paint, false);
     }
 
     private Path toPath(Coordinate[] coordinates ) {
