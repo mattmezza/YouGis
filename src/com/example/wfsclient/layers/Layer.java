@@ -7,6 +7,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollectionIterator;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +18,7 @@ public class Layer {
     private List<Geometry> geometries;
     private boolean cancelOperation;
     private LayerListener listener;
+    private String name;
 
     public Layer(List<Geometry> pGeometries) {
         this.geometries = pGeometries;
@@ -124,6 +126,10 @@ public class Layer {
             this.listener = listener;
         else
             this.listener = new VoidListener();
+    }
+
+    public void save(URL outputFilename) {
+
     }
 
     public interface LayerListener {

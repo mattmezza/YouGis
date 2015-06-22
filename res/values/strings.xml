@@ -8,4 +8,5 @@
     <string name="connection_error">Errore di connessione</string>
     <string name="action_buffer">Buffer</string>
     <string name="action_intersection">Intersection</string>
+    <string name="promptLayerSelection">Scegli l\'oggetto</string>
 </resources>

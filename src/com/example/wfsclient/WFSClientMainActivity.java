@@ -17,6 +17,7 @@ import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.net.ConnectivityManager;
@@ -29,7 +30,9 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 public class WFSClientMainActivity extends Activity {
@@ -592,6 +595,31 @@ public class WFSClientMainActivity extends Activity {
 
                 //Sets the layout
                 inflater = this.getLayoutInflater();
+
+                View preBufferView = inflater.inflate(R.layout.pre_buffer, null);
+                alert.setView(preBufferView);
+                Spinner spinnerIds = (Spinner) preBufferView.findViewById(R.id.spinnerIds);
+                CheckBox checkBox = (CheckBox) preBufferView.findViewById(R.id.selectAll);
+                final EditText distanceText = (EditText)preBufferView.findViewById(R.id.bufferingDistance);
+                double distance = Double.parseDouble(distanceText.getText().toString());
+
+                if(checkBox.isSelected()) {
+                    // apply the buffering on every object
+
+                } else {
+                    SpinnerItem selectedItem = (SpinnerItem) spinnerIds.getSelectedItem();
+                    int id = selectedItem.getId();
+                    // id è l'id dell'oggetto da bufferizzare
+
+                    String[] parts = new String[1];
+                    parts[0] = String.valueOf(id);
+                    List<Geometry> elements = getGeometriesFromLayer(layer, parts);
+
+
+                    //layer.applyBuffers(elements, distance);
+
+                }
+
                 alertView = inflater.inflate(R.layout.dialog_buffering, null);
                 alert.setView(alertView);
 
