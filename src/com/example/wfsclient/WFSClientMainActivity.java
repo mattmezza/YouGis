@@ -329,10 +329,10 @@ public class WFSClientMainActivity extends Activity {
 
     }
 
-    private class BufferingTask extends MyAsyncTask <Object,Integer,Geometry>{
+    private class BufferingTask extends MyAsyncTask <Object,Integer,Layer>{
         private Layer layer;
         @Override
-        protected Geometry doInBackground(Object... params) {
+        protected Layer doInBackground(Object... params) {
             String distanceText;
             String idsText;
 
@@ -382,9 +382,10 @@ public class WFSClientMainActivity extends Activity {
                 }
             });
 
-            Geometry buffer;
+            Layer buffer;
             try {
-                buffer = layer.applyBuffers(elements, distance);
+                buffer = layer.applyBuffer(elements, distance, false);
+                buffer.setName("Buffer di " + layer.getName());
             } catch (InterruptedException e) {
                 return null;
             }
@@ -400,9 +401,9 @@ public class WFSClientMainActivity extends Activity {
         }
 
         @Override
-        protected void onPostExecute(Geometry geometry) {
-            if (geometry != null)
-                layer.addGeometry(geometry);
+        protected void onPostExecute(Layer layer) {
+            if (layer != null)
+                drawView.addLayer(layer);
         }
 
         @Override
@@ -411,10 +412,10 @@ public class WFSClientMainActivity extends Activity {
         }
     }
 
-    private class IntersectionTask extends MyAsyncTask <Object,Integer,Geometry>{
+    private class IntersectionTask extends MyAsyncTask <Object,Integer,Layer>{
         private Layer layer;
         @Override
-        protected Geometry doInBackground(Object... params) {
+        protected Layer doInBackground(Object... params) {
             String idsText;
 
             if (params[0] instanceof String && params[1] instanceof Layer) {
@@ -453,9 +454,9 @@ public class WFSClientMainActivity extends Activity {
                 }
             });
 
-            Geometry intersection;
+            Layer intersection;
             try {
-                intersection = layer.applyIntersection(elements);
+                intersection = layer.applyIntersection(elements, new ArrayList<Geometry>());
             } catch (InterruptedException e) {
                 return null;
             }
@@ -474,9 +475,9 @@ public class WFSClientMainActivity extends Activity {
         }
 
         @Override
-        protected void onPostExecute(Geometry geometry) {
-            if (geometry != null) {
-                layer.addGeometry(geometry);
+        protected void onPostExecute(Layer layer) {
+            if (layer != null) {
+                drawView.addLayer(layer);
             }
         }
 

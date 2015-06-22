@@ -1,4 +1,5 @@
 package com.example.wfsclient;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -27,7 +28,7 @@ import android.view.View;
 public class DrawView extends View {
 
 	private final static Logger LOGGER = Logger.getLogger(DrawView.class .getName());
-	private List<Layer> lista;
+	private List<Layer> layers;
 
 	private ScaleGestureDetector mScaleDetector;
 	private float mScaleFactor = 0.0002f;
@@ -48,16 +49,17 @@ public class DrawView extends View {
 
         mScaleDetector = new ScaleGestureDetector(context, new ScaleListener());
 
+        this.layers = new ArrayList<Layer>();
         for (Layer layer : layers) {
             this.addSimpleLayer(layer);
         }
 
-        if (lista.size() == 0 || lista.get(0).getGeometries().size() == 0 || lista.get(0).getGeometries().get(0).getCoordinates().length == 0) {
+        if (this.layers.size() == 0 || this.layers.get(0).getGeometries().size() == 0 || this.layers.get(0).getGeometries().get(0).getCoordinates().length == 0) {
             centerX = 0F;
             centerY = 0F;
         } else {
-            centerX = (float) lista.get(0).getGeometries().get(0).getCoordinates()[0].x;
-            centerY = (float) lista.get(0).getGeometries().get(0).getCoordinates()[0].y;
+            centerX = (float) this.layers.get(0).getGeometries().get(0).getCoordinates()[0].x;
+            centerY = (float) this.layers.get(0).getGeometries().get(0).getCoordinates()[0].y;
         }
 	}
 
@@ -66,8 +68,12 @@ public class DrawView extends View {
         this.postInvalidate();
     }
 
+    public List<Layer> getLayers() {
+        return layers;
+    }
+
     private void addSimpleLayer(Layer pLayer) {
-        this.lista.add(pLayer);
+        this.layers.add(pLayer);
 
         final DrawView thisView = this;
 
@@ -122,7 +128,7 @@ public class DrawView extends View {
 	}
 
 	protected void onDraw(Canvas canvas) {
-        if (lista.size() == 0)
+        if (layers.size() == 0)
             return;
 
 		super.onDraw(canvas);
@@ -136,7 +142,7 @@ public class DrawView extends View {
         double toX = (this.mPosX+canvas.getWidth()/2)/canvas.getDensity();
 
         paint.setStyle(Paint.Style.STROKE);
-        for (Layer layer : this.lista) {
+        for (Layer layer : this.layers) {
             paint.setColor(layer.getColor());
             for (Geometry geometry : layer.getGeometries()) {
                 drawGeometry(geometry, canvas, paint);

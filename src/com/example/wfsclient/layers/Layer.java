@@ -8,7 +8,28 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollectionIterator;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.io.WKTReader;
 
+import org.geotools.data.DataUtilities;
+import org.geotools.data.FeatureSource;
+import org.geotools.data.FeatureWriter;
+import org.geotools.data.Transaction;
+import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.feature.AttributeType;
+import org.geotools.feature.Feature;
+import org.geotools.feature.FeatureCollection;
+import org.geotools.feature.FeatureCollections;
+import org.geotools.feature.FeatureType;
+import org.geotools.feature.GeometryAttributeType;
+import org.geotools.feature.IllegalAttributeException;
+import org.geotools.feature.SimpleFeatureType;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -111,6 +132,10 @@ public class Layer {
             this.listener = listener;
         else
             this.listener = new VoidListener();
+    }
+
+    public byte[] save(URL url) throws IOException {
+        return null;
     }
 
     @Override
