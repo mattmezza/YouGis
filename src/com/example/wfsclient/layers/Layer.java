@@ -1,5 +1,7 @@
 package com.example.wfsclient.layers;
 
+import android.graphics.Color;
+import android.graphics.RadialGradient;
 import android.util.Log;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -9,6 +11,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by simone on 04/06/15.
@@ -17,11 +20,27 @@ public class Layer {
     private List<Geometry> geometries;
     private boolean cancelOperation;
     private LayerListener listener;
+    private String name;
+    private int color;
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getColor() {
+        return this.color;
+    }
 
     public Layer(List<Geometry> pGeometries) {
         this.geometries = pGeometries;
-        this.cancelOperation = false;
         this.listener = new VoidListener();
+
+        Random random = new Random();
+        this.color = Color.rgb(random.nextInt(256), random.nextInt(256), random.nextInt(256));
     }
 
     public Layer() {
@@ -38,80 +57,48 @@ public class Layer {
         return this.geometries;
     }
 
-    @Deprecated
-    public Geometry applyBuffers(Geometry pGeometry, double pDistance) {
-        this.cancelOperation = false;
-        Geometry buffer = pGeometry.buffer(pDistance);
+    public Layer applyBuffer(List<Geometry> pGeometries, final double pDistance, final boolean pDissolve) throws InterruptedException {
+        if (pGeometries.size() == 0)
+            return new Layer();
+        List<Geometry> result = new ArrayList<Geometry>();
 
-        return buffer;
+        if (pDissolve) {
+            Geometry currentGeometry = pGeometries.get(0);
+
+            for (int i = 1; i < pGeometries.size(); i++)
+                currentGeometry = currentGeometry.union(pGeometries.get(i));
+
+            result.add(currentGeometry.buffer(pDistance));
+        } else {
+            for (Geometry geometry : pGeometries)
+                result.add(geometry.buffer(pDistance));
+        }
+
+        return new Layer(result);
     }
 
-    public Geometry applyBuffers(List<Geometry> pGeometries, final double pDistance) throws InterruptedException {
-        if (pGeometries.size() == 0)
-            return new GeometryFactory().createPoint(new Coordinate(0, 0));
+    public Layer applyIntersection(List<Geometry> pGeometries1, List<Geometry> pGeometries2) throws InterruptedException {
+        if (pGeometries1.size() == 0 || pGeometries2.size() == 0)
+            return new Layer();
 
+        Geometry intersectionGeometry = this.union(pGeometries2);
+        List<Geometry> result = new ArrayList<Geometry>();
+
+        for (Geometry geometry : pGeometries1) {
+            result.add(geometry.intersection(intersectionGeometry));
+        }
+
+        return new Layer(result);
+    }
+
+    private Geometry union(List<Geometry> pGeometries) {
         Geometry currentGeometry = pGeometries.get(0);
-
         for (int i = 1; i < pGeometries.size(); i++)
             currentGeometry = currentGeometry.union(pGeometries.get(i));
 
-        final Geometry baseGeometry = currentGeometry;
-        final Geometry buffer;
-
-        OperationalThread thread = new OperationalThread<Double>(currentGeometry, new Double[] {pDistance}) {
-            @Override
-            public void run() {
-                result = base.buffer(params[0]);
-            }
-        };
-
-        thread.start();
-        this.waitForThread(thread);
-
-        return thread.getResult();
+        return currentGeometry;
     }
 
-    public Geometry applyIntersection(List<Geometry> pGeometries) throws InterruptedException {
-
-        if (pGeometries.size() == 0)
-            return new GeometryFactory().createPoint(new Coordinate(0, 0));
-
-        OperationalThread thread = new OperationalThread<Object>(null, new Object[] {pGeometries}) {
-            @Override
-            public void run() {
-                List<Geometry> geometries =(List<Geometry>)params[0];
-                result = geometries.get(0);
-                for (int i = 1; i < geometries.size(); i++)
-                    result = result.intersection(geometries.get(i));
-            }
-        };
-
-        thread.start();
-        waitForThread(thread);
-
-        return thread.getResult();
-    }
-
-    public synchronized void stopCurrentOperation() {
-        this.cancelOperation = true;
-        Log.d("STOP!!", "Set cancelOperation to " + cancelOperation);
-    }
-
-    private void waitForThread(OperationalThread thread) throws InterruptedException {
-        this.cancelOperation = false;
-
-        while (thread.isAlive()) {
-            Thread.sleep(1000);
-            Log.d("Looping", "Checking now...");
-            synchronized (this) {
-                if (this.cancelOperation) {
-                    Log.d("Looping", "Stop!!");
-                    thread.interrupt();
-                    throw new InterruptedException();
-                }
-            }
-        }
-    }
 
     public boolean removeGeometry(Geometry pGeometry) {
         boolean result = this.geometries.remove(pGeometry);
@@ -126,6 +113,11 @@ public class Layer {
             this.listener = new VoidListener();
     }
 
+    @Override
+    public String toString() {
+        return this.name;
+    }
+
     public interface LayerListener {
         public void onLayerChange();
     }
@@ -134,22 +126,5 @@ public class Layer {
         @Override
         public void onLayerChange() {
         }
-    }
-}
-
-abstract class OperationalThread<Params> extends Thread {
-    protected Params[] params;
-    protected Geometry base;
-    protected Geometry result;
-
-    public OperationalThread(Geometry base, Params[] params) {
-        this.params = params;
-        this.base = base;
-    }
-
-    public abstract void run();
-
-    public Geometry getResult() {
-        return result;
     }
 }
