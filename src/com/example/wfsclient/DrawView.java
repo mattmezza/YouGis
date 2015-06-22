@@ -1,4 +1,5 @@
 package com.example.wfsclient;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -27,7 +28,7 @@ import android.view.View;
 public class DrawView extends View {
 
 	private final static Logger LOGGER = Logger.getLogger(DrawView.class .getName());
-	private List<Layer> lista;
+	private List<Layer> layers;
 
 	private ScaleGestureDetector mScaleDetector;
 	private float mScaleFactor = 0.0002f;
@@ -43,32 +44,46 @@ public class DrawView extends View {
     private float centerX;
     private float centerY;
 
-    public DrawView(Context context,List<Layer> layers) {
+    public DrawView(Context context, List<Layer> layers) {
 		super(context);
 
         mScaleDetector = new ScaleGestureDetector(context, new ScaleListener());
 
-        lista = layers;
-
-        final DrawView thisView = this;
-
-        for (Layer layer : lista) {
-            layer.setListener(new Layer.LayerListener() {
-                @Override
-                public void onLayerChange() {
-                    thisView.postInvalidate();
-                }
-            });
+        this.layers = new ArrayList<Layer>();
+        for (Layer layer : layers) {
+            this.addSimpleLayer(layer);
         }
 
-        if (lista.size() == 0 || lista.get(0).getGeometries().size() == 0 || lista.get(0).getGeometries().get(0).getCoordinates().length == 0) {
+        if (this.layers.size() == 0 || this.layers.get(0).getGeometries().size() == 0 || this.layers.get(0).getGeometries().get(0).getCoordinates().length == 0) {
             centerX = 0F;
             centerY = 0F;
         } else {
-            centerX = (float) lista.get(0).getGeometries().get(0).getCoordinates()[0].x;
-            centerY = (float) lista.get(0).getGeometries().get(0).getCoordinates()[0].y;
+            centerX = (float) this.layers.get(0).getGeometries().get(0).getCoordinates()[0].x;
+            centerY = (float) this.layers.get(0).getGeometries().get(0).getCoordinates()[0].y;
         }
 	}
+
+    public void addLayer(Layer pLayer) {
+        this.addSimpleLayer(pLayer);
+        this.postInvalidate();
+    }
+
+    public List<Layer> getLayers() {
+        return layers;
+    }
+
+    private void addSimpleLayer(Layer pLayer) {
+        this.layers.add(pLayer);
+
+        final DrawView thisView = this;
+
+        pLayer.setListener(new Layer.LayerListener() {
+            @Override
+            public void onLayerChange() {
+                thisView.postInvalidate();
+            }
+        });
+    }
 
 	@Override
 	public boolean onTouchEvent(MotionEvent ev) {
@@ -113,12 +128,11 @@ public class DrawView extends View {
 	}
 
 	protected void onDraw(Canvas canvas) {
-        if (lista.size() == 0)
+        if (layers.size() == 0)
             return;
 
 		super.onDraw(canvas);
 
-		paint.setColor(Color.BLACK);
 		paint.setStyle(Paint.Style.STROKE);
 		paint.setAntiAlias(true);
 		canvas.translate(mPosX, mPosY);
@@ -128,7 +142,8 @@ public class DrawView extends View {
         double toX = (this.mPosX+canvas.getWidth()/2)/canvas.getDensity();
 
         paint.setStyle(Paint.Style.STROKE);
-        for (Layer layer : this.lista) {
+        for (Layer layer : this.layers) {
+            paint.setColor(layer.getColor());
             for (Geometry geometry : layer.getGeometries()) {
                 drawGeometry(geometry, canvas, paint);
             }
@@ -155,27 +170,21 @@ public class DrawView extends View {
 
     private void drawMultiPolygon(MultiPolygon o, Canvas canvas, Paint paint) {
         int size = o.getNumGeometries();
-        int color = paint.getColor();
 
-        paint.setColor(Color.rgb(o.getNumPoints() % 255, (int)o.getArea() % 255, o.getBoundaryDimension() % 255));
         for (int i = 0; i < size; i++) {
             Geometry currentGeometry = o.getGeometryN(i);
             if (currentGeometry instanceof Polygon) {
-                this.drawPolygon((Polygon)currentGeometry, canvas, paint, true);
+                this.drawPolygon((Polygon)currentGeometry, canvas, paint);
             }else
                 this.drawGeometry(o.getGeometryN(i), canvas, paint);
         }
-
-        paint.setColor(color);
     }
 
-    private void drawPolygon(Polygon o, Canvas canvas, Paint paint, boolean fixColor) {
+    private void drawPolygon(Polygon o, Canvas canvas, Paint paint) {
         paint.setStyle(Paint.Style.FILL);
-        if (!fixColor)
-            paint.setColor(Color.rgb(o.getNumPoints() % 255, (int)o.getArea() % 255, o.getBoundaryDimension() % 255));
-        Path polygonPath = new Path();
+
         Collection<Object> holeVerticesCollection= new LinkedList<Object>();
-        polygonPath = toPath(o.getExteriorRing().getCoordinates());
+        Path polygonPath = toPath(o.getExteriorRing().getCoordinates());
         int n= o.getNumInteriorRing();
         if(n!=0){
             for(int i=0;i<n;i++){
@@ -191,10 +200,6 @@ public class DrawView extends View {
         }
 
         paint.setStyle(Paint.Style.STROKE);
-    }
-
-    private void drawPolygon(Polygon o, Canvas canvas, Paint paint) {
-        drawPolygon(o, canvas, paint, false);
     }
 
     private Path toPath(Coordinate[] coordinates ) {
