@@ -49,6 +49,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 	private boolean mobileConnected=false;
 	private LinkedList<Object> listaOggetti=new LinkedList<Object>();
 	private boolean disegna=false;
+    private boolean addLayer=false;
     private List<Layer> currentLayers;
 	private ProgressDialog progressDialog;
     private ProgressDialog dlProgressDialog;
@@ -70,12 +71,18 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
     private void createMenuEntries() {
         wfsList = new HashMap<String, String>();
         wfsList.put("North atlas", "http://nsidc.org/cgi-bin/atlas_north?service=WFS&request=GetCapabilities");
+        wfsList.put("Sardegna", "http://webgis.regione.sardegna.it/geoserver/wfs?service=WFS&request=GetCapabilities");
+        wfsList.put("Atlanta", "http://www.geoportal.rgurs.org/erdas-apollo/vector/ATLGML3_SHAPE?service=WFS&request=GetCapabilities");
+
         wfsList.put("Torino - Azzonamenti sanitari", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc35_azzonamenti_sanitari?service=WFS&request=getCapabilities");
         wfsList.put("Torino - Carceri", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc122_carceri?service=WFS&request=getCapabilities");
         wfsList.put("Torino - Polizia amministrativa", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc48_polizia_amm?service=WFS&request=getCapabilities");
-        wfsList.put("Torino", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc116_chiese?service=WFS&request=getCapabilities");
-        wfsList.put("Sardegna", "http://webgis.regione.sardegna.it/geoserver/wfs?service=WFS&request=GetCapabilities");
-        wfsList.put("Atlanta", "http://www.geoportal.rgurs.org/erdas-apollo/vector/ATLGML3_SHAPE?service=WFS&request=GetCapabilities");
+        wfsList.put("Torino - Religione", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc116_chiese?service=WFS&request=getCapabilities");
+        wfsList.put("Torino - Ospedali", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc112_ospedali?service=WFS&request=getCapabilities");
+        wfsList.put("Torino - Cartografia", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc01_dati_di_base?service=WFS&request=getCapabilities");
+        wfsList.put("Torino - Farmacie", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc102_farmacie?service=WFS&request=getCapabilities");
+        wfsList.put("Torino - ASL", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc106_sedi_asl?service=WFS&request=getCapabilities");
+
     }
 
 	@Override
@@ -83,6 +90,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 		super.onCreate(savedInstanceState);
         this.inDrawView = false;
         this.drawView = null;
+
 		setContentView(R.layout.activity_wfsclient_main);
         createMenuEntries();
 		this.progressDialog = new ProgressDialog(this);
@@ -104,6 +112,8 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         this.opProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         this.opProgressDialog.setCancelable(false);
         this.opProgressDialog.setIndeterminate(true);
+
+        this.currentLayers = new ArrayList<Layer>();
 	}
 
 	@Override
@@ -505,23 +515,30 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 	/**Flag per distinguere quale bottone � stato utilizzato*/
 	public void disegna(View view){
 		disegna=true;
+        if (view.getId() == R.id.aggiungiButton)
+            this.addLayer = true;
+        else
+            this.addLayer = false;
+
 		startConnection();
 	}
 
 	/**Invoca la View per disegnare la Feature*/
 	public void disegnaOnView(LinkedList<Object> l, String name) throws ParseException{
-        Layer standard = new Layer();
+        Layer currentLayer = new Layer();
         for (Object o : l)
             if (o instanceof Geometry)
-                standard.addGeometry((Geometry)o);
-        List<Layer> layers = new ArrayList<Layer>();
-        layers.add(standard);
-        standard.setName(name);
-        this.currentLayers = layers;
+                currentLayer.addGeometry((Geometry)o);
+
+        if (!this.addLayer)
+            this.currentLayers.clear();
+
+        currentLayer.setName(name);
+        this.currentLayers.add(currentLayer);
 
         setContentView(R.layout.drawing_layout);
         this.drawView = (DrawView) findViewById(R.id.drawView);
-        this.drawView.setLayers(layers);
+        this.drawView.setLayers(this.currentLayers);
         this.inDrawView = true;
 	}
 

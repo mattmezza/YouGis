@@ -36,6 +36,13 @@
             android:text="@string/disegnaButton" 
             android:onClick="disegna"/>
 
+        <Button
+            android:id="@+id/aggiungiButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/aggiungiButton"
+            android:onClick="disegna" />
+
     </LinearLayout>
 
 </LinearLayout>

@@ -111,7 +111,7 @@ public class BufferingFragment extends Fragment {
                 if (nameTxt.length()<2) {
                     AlertDialog dialog = new AlertDialog.Builder(getActivity())
                             .setTitle("Attenzione")
-                            .setMessage("Inserisci un nome per il nuovo layer.")
+                            .setMessage("Inserisci un nome per il nuovo layer (almeno due caratteri).")
                             .show();
                     return;
                 }
@@ -130,7 +130,7 @@ public class BufferingFragment extends Fragment {
                 try {
                     distance = Double.parseDouble(distanceText.getText().toString());
                     if(callback!=null)
-                        callback.setBufferingOptions(nameTxt, selected, selectedGeometries, distance, dissolveCB.isSelected(), saveCB.isSelected());
+                        callback.setBufferingOptions(nameTxt, selected, selectedGeometries, distance, dissolveCB.isChecked(), saveCB.isSelected());
                 } catch(NumberFormatException e) {
                     AlertDialog dialog = new AlertDialog.Builder(getActivity())
                             .setTitle("Attenzione")
