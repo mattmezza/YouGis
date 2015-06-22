@@ -13,26 +13,35 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import com.example.wfsclient.layers.Layer;
+import com.example.wfsclient.teammolise.BufferOptionCallback;
+import com.example.wfsclient.teammolise.BufferingFragment;
+import com.example.wfsclient.teammolise.MultiSelectionSpinner;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
-import android.app.Activity;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
-public class WFSClientMainActivity extends Activity {
+public class WFSClientMainActivity extends Activity implements BufferOptionCallback {
 
 	private final static Logger LOGGER = Logger.getLogger(WFSClientMainActivity.class.getName());
 	
@@ -329,16 +338,23 @@ public class WFSClientMainActivity extends Activity {
 
     }
 
+    public void setBufferingOptions(String nameTxt, Layer selected, List<Geometry> selectedGeometries, double distance, boolean dissolve, boolean save) {
+        new BufferingTask().execute(
+                String.valueOf(distance),
+                selectedGeometries,
+                selected);
+    }
+
     private class BufferingTask extends MyAsyncTask <Object,Integer,Geometry>{
         private Layer layer;
         @Override
         protected Geometry doInBackground(Object... params) {
             String distanceText;
-            String idsText;
+            List<Geometry> geometries;
 
-            if (params[0] instanceof String && params[1] instanceof String && params[2] instanceof Layer) {
+            if (params[0] instanceof String && params[1] instanceof List && params[2] instanceof Layer) {
                 distanceText = (String) params[0];
-                idsText = (String) params[1];
+                geometries = (List<Geometry>) params[1];
                 layer = (Layer) params[2];
             } else {
                 LOGGER.info("Error - incorrect parameters!");
@@ -353,24 +369,24 @@ public class WFSClientMainActivity extends Activity {
                 return null;
             }
 
-            String[] parts = idsText.split(",");
-            List<Geometry> elements;
-            try {
-                elements = getGeometriesFromLayer(layer, parts);
-            } catch (NumberFormatException e) {
-                showError("Errore", "Errore nel formato della lista di ID");
-                return null;
-            } catch (ArrayIndexOutOfBoundsException e) {
-                showError("Errore", "ID non validi (fuori dal range)");
-                return null;
-            } catch (IndexOutOfBoundsException e) {
-                showError("Errore", "ID non validi (fuori dal range)");
-                return null;
-            } catch (Exception e) {
-                showError("Error", "Errore sconosciuto. Controllare il log per ulteriori dettagli");
-                e.printStackTrace();
-                return null;
-            }
+//            String[] parts = geometries.split(",");
+//            List<Geometry> elements;
+//            try {
+//                elements = getGeometriesFromLayer(layer, parts);
+//            } catch (NumberFormatException e) {
+//                showError("Errore", "Errore nel formato della lista di ID");
+//                return null;
+//            } catch (ArrayIndexOutOfBoundsException e) {
+//                showError("Errore", "ID non validi (fuori dal range)");
+//                return null;
+//            } catch (IndexOutOfBoundsException e) {
+//                showError("Errore", "ID non validi (fuori dal range)");
+//                return null;
+//            } catch (Exception e) {
+//                showError("Error", "Errore sconosciuto. Controllare il log per ulteriori dettagli");
+//                e.printStackTrace();
+//                return null;
+//            }
 
 
             runOnUiThread(new Runnable() {
@@ -384,7 +400,7 @@ public class WFSClientMainActivity extends Activity {
 
             Geometry buffer;
             try {
-                buffer = layer.applyBuffers(elements, distance);
+                buffer = layer.applyBuffers(geometries, distance);
             } catch (InterruptedException e) {
                 return null;
             }
@@ -590,24 +606,33 @@ public class WFSClientMainActivity extends Activity {
             case R.id.action_Buffer:
                 alert.setTitle("Buffering (da 0 a " + (layer.getGeometries().size()-1) +")");
 
-                //Sets the layout
-                inflater = this.getLayoutInflater();
-                alertView = inflater.inflate(R.layout.dialog_buffering, null);
-                alert.setView(alertView);
+//                //Sets the layout
+//                inflater = this.getLayoutInflater();
+//                alertView = inflater.inflate(R.layout.dialog_buffering, null);
+//                alert.setView(alertView);
+//
+//                idsText = (EditText)alertView.findViewById(R.id.bufferingIds);
+//                final EditText distanceText = (EditText)alertView.findViewById(R.id.bufferingDistance);
+//
+//                alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+//                    public void onClick(DialogInterface dialog, int whichButton) {
+//                        new BufferingTask().execute(
+//                                distanceText.getText().toString(),
+//                                idsText.getText().toString(),
+//                                layer);
+//                    }
+//                });
+//
+//                alert.show();
+                BufferingFragment bufferingFragment = new BufferingFragment();
+                bufferingFragment.setLayers(drawView.getLayers());
+                bufferingFragment.setBufferOptionCallback(this);
 
-                idsText = (EditText)alertView.findViewById(R.id.bufferingIds);
-                final EditText distanceText = (EditText)alertView.findViewById(R.id.bufferingDistance);
-
-                alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        new BufferingTask().execute(
-                                distanceText.getText().toString(),
-                                idsText.getText().toString(),
-                                layer);
-                    }
-                });
-
-                alert.show();
+                FragmentManager fragmentManager = getFragmentManager();
+                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                fragmentTransaction.add(R.id.fragmentContainer, bufferingFragment, "BUFFERING_FRAGMENT");
+                fragmentTransaction.commit();
+                // TODO avviare il fragment
                 return true;
             case R.id.action_Intersection:
                 alert.setTitle("Intersezione (da 0 a " + (layer.getGeometries().size()-1) +")");

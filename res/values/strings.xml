@@ -8,4 +8,13 @@
     <string name="connection_error">Errore di connessione</string>
     <string name="action_buffer">Buffer</string>
     <string name="action_intersection">Intersection</string>
+    <string name="selectLayer">Seleziona il layer</string>
+    <string name="selectAll">Seleziona tutti</string>
+    <string name="distanceHint">Distanza (in metri)</string>
+    <string name="dissolve">Dissolvi</string>
+    <string name="name">Nome nuovo layer</string>
+    <string name="save">Salva</string>
+    <string name="selectGeometry">Seleziona geometria</string>
+    <string name="selectSecondLayer">Seleziona il secondo layer</string>
+    <string name="selectFirstLayer">Seleziona il primo layer</string>
 </resources>
