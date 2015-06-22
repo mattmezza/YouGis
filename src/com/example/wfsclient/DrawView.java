@@ -21,6 +21,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.text.TextPaint;
+import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -44,11 +45,22 @@ public class DrawView extends View {
     private float centerX;
     private float centerY;
 
-    public DrawView(Context context, List<Layer> layers) {
-		super(context);
-
+    public DrawView(Context context) {
+        super(context);
         mScaleDetector = new ScaleGestureDetector(context, new ScaleListener());
+    }
 
+    public DrawView(Context context, AttributeSet attrSet) {
+        super(context, attrSet);
+        mScaleDetector = new ScaleGestureDetector(context, new ScaleListener());
+    }
+
+    public DrawView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
+        mScaleDetector = new ScaleGestureDetector(context, new ScaleListener());
+    }
+
+    public void setLayers(List<Layer> layers) {
         this.layers = new ArrayList<Layer>();
         for (Layer layer : layers) {
             this.addSimpleLayer(layer);

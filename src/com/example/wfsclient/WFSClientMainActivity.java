@@ -61,6 +61,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 	private static String wfsVersion = "1.1.0";
 	private List<String> feature;//l'index 0 contiene l'ind del wfs
 	private String request="";
+    private String requestName="";
 	private boolean requestBoolean=false;
     private boolean inDrawView;
     private DrawView drawView;
@@ -141,7 +142,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 			if(!requestBoolean)
 				new ConnectToWFS().execute(defaultwfs);
 			else
-				new DownloadXmlTask().execute(request);
+				new DownloadXmlTask().execute(request, requestName);
 		} else {
 			showErrorPage();
 		}
@@ -234,9 +235,12 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 	 */
 	private class DownloadXmlTask extends MyAsyncTask <String,Integer,Boolean>{
 
+        String name;
+
 		@Override
 		protected Boolean doInBackground(String... urls) {
             String urlString = urls[0];
+            name = urls[1];
             InputStream stream = null;
 
 			try {
@@ -323,7 +327,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 			setContentView(R.layout.activity_wfsclient_main);
             try {
                 LOGGER.info("INVOCO LA VIEW");
-                disegnaOnView(listaOggetti);
+                disegnaOnView(listaOggetti, name);
             } catch (ParseException e) {
                 showError("Error", "Errore sconosciuto. Controllare il log per ulteriori dettagli.");
                 e.printStackTrace();
@@ -340,54 +344,33 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
     public void setBufferingOptions(String nameTxt, Layer selected, List<Geometry> selectedGeometries, double distance, boolean dissolve, boolean save) {
         new BufferingTask().execute(
-                String.valueOf(distance),
+                distance,
                 selectedGeometries,
-                selected);
+                selected,
+                dissolve, save, nameTxt);
     }
     
     private class BufferingTask extends MyAsyncTask <Object,Integer,Layer>{
         private Layer layer;
         @Override
         protected Layer doInBackground(Object... params) {
-            String distanceText;
+            Double distance;
             List<Geometry> geometries;
+            boolean save;
+            boolean dissolve;
+            String name;
 
-            if (params[0] instanceof String && params[1] instanceof List && params[2] instanceof Layer) {
-                distanceText = (String) params[0];
+            if (params[0] instanceof Double && params[1] instanceof List && params[2] instanceof Layer && params[3] instanceof Boolean && params[4] instanceof Boolean && params[5] instanceof String) {
+                distance = (Double) params[0];
                 geometries = (List<Geometry>) params[1];
                 layer = (Layer) params[2];
+                save = (Boolean) params[4];
+                dissolve = (Boolean) params[3];
+                name = (String) params[5];
             } else {
                 LOGGER.info("Error - incorrect parameters!");
                 return null;
             }
-
-            int distance;
-            try {
-                distance = Integer.parseInt(distanceText);
-            } catch (NumberFormatException e) {
-                showError("Errore", "Inserire la distanza (valore numerico)");
-                return null;
-            }
-
-//            String[] parts = geometries.split(",");
-//            List<Geometry> elements;
-//            try {
-//                elements = getGeometriesFromLayer(layer, parts);
-//            } catch (NumberFormatException e) {
-//                showError("Errore", "Errore nel formato della lista di ID");
-//                return null;
-//            } catch (ArrayIndexOutOfBoundsException e) {
-//                showError("Errore", "ID non validi (fuori dal range)");
-//                return null;
-//            } catch (IndexOutOfBoundsException e) {
-//                showError("Errore", "ID non validi (fuori dal range)");
-//                return null;
-//            } catch (Exception e) {
-//                showError("Error", "Errore sconosciuto. Controllare il log per ulteriori dettagli");
-//                e.printStackTrace();
-//                return null;
-//            }
-
 
             runOnUiThread(new Runnable() {
                 @Override
@@ -400,9 +383,11 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
             Layer buffer;
             try {
-                buffer = layer.applyBuffers(geometries, distance);
-                buffer = layer.applyBuffer(elements, distance, false);
-                buffer.setName("Buffer di " + layer.getName());
+                buffer = layer.applyBuffer(geometries, distance, dissolve);
+                buffer.setName(name);
+                if(save) {
+                    // TODO implement saving functionality
+                }
             } catch (InterruptedException e) {
                 return null;
             }
@@ -524,18 +509,19 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 	}
 
 	/**Invoca la View per disegnare la Feature*/
-	public void disegnaOnView(LinkedList<Object> l) throws ParseException{
+	public void disegnaOnView(LinkedList<Object> l, String name) throws ParseException{
         Layer standard = new Layer();
         for (Object o : l)
             if (o instanceof Geometry)
                 standard.addGeometry((Geometry)o);
         List<Layer> layers = new ArrayList<Layer>();
         layers.add(standard);
-
+        standard.setName(name);
         this.currentLayers = layers;
 
-        this.drawView = new DrawView(this, layers);
-		setContentView(this.drawView);
+        setContentView(R.layout.drawing_layout);
+        this.drawView = (DrawView) findViewById(R.id.drawView);
+        this.drawView.setLayers(layers);
         this.inDrawView = true;
 	}
 
@@ -555,6 +541,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
                         (baseUrl.endsWith("?") ? "" : "?") +
                         "service=WFS&version=" + wfsVersion +
                         "&request=GetFeature&typeName=" + options[item];
+                requestName = options[item];
                 LOGGER.info("REQUEST " + item + feature.toString());
                 requestBoolean=true;
                 startConnection();//Ricontrolla la connessione e avvia il download della feature
@@ -634,7 +621,6 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
                 FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
                 fragmentTransaction.add(R.id.fragmentContainer, bufferingFragment, "BUFFERING_FRAGMENT");
                 fragmentTransaction.commit();
-                // TODO avviare il fragment
                 return true;
             case R.id.action_Intersection:
                 alert.setTitle("Intersezione (da 0 a " + (layer.getGeometries().size()-1) +")");
