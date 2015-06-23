@@ -19,4 +19,5 @@
     <string name="selectFirstLayer">Seleziona il primo layer</string>
     <string name="aggiungiButton">Aggiungi</string>
     <string name="selectLayerIntersection">Layer di intersezione</string>
+    <string name="segmentsNumberHint">Numero di segmenti</string>
 </resources>
