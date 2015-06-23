@@ -15,6 +15,7 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 
+import com.example.wfsclient.DrawView;
 import com.example.wfsclient.R;
 import com.example.wfsclient.layers.Layer;
 import com.vividsolutions.jts.geom.Geometry;
@@ -45,13 +46,13 @@ public class IntersectionFragment extends Fragment {
     private Layer selected2;
     private IntersectionOptionCallback callback;
 
-    private List<Layer> layers;
+    private DrawView drawView;
 
     public IntersectionFragment() {
     }
 
-    public void setLayers(List<Layer> layers) {
-        this.layers = layers;
+    public void setDrawView(DrawView drawView) {
+        this.drawView = drawView;
     }
 
     public void setBufferOptionCallback(IntersectionOptionCallback bocb) {
@@ -71,10 +72,10 @@ public class IntersectionFragment extends Fragment {
         spinner1 = (Spinner) view.findViewById(R.id.selectLayer1);
         spinner2 = (Spinner) view.findViewById(R.id.selectLayer2);
 
-        ArrayAdapter<Layer> layersAdapter1 = new ArrayAdapter<Layer>(getActivity(), android.R.layout.simple_spinner_item, layers);
+        ArrayAdapter<Layer> layersAdapter1 = new ArrayAdapter<Layer>(getActivity(), android.R.layout.simple_spinner_item, drawView.getLayers());
         spinner1.setAdapter(layersAdapter1);
 
-        ArrayAdapter<Layer> layersAdapter2 = new ArrayAdapter<Layer>(getActivity(), android.R.layout.simple_spinner_item, layers);
+        ArrayAdapter<Layer> layersAdapter2 = new ArrayAdapter<Layer>(getActivity(), android.R.layout.simple_spinner_item, drawView.getLayers());
         spinner2.setAdapter(layersAdapter2);
 
         layersAdapter1.notifyDataSetChanged();
