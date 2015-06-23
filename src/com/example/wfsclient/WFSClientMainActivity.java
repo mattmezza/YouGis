@@ -550,8 +550,9 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 	}
 	/**Flag per distinguere quale bottone � stato utilizzato*/
 	public void disegna(View view){
-		disegna=true;
-        requestBoolean = false;
+		this.disegna=true;
+        this.aggiorna = false;
+        this.requestBoolean = false;
         if (view.getId() == R.id.addLayer) {
             this.addLayer = true;
             this.aggiorna = true;
@@ -692,6 +693,9 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (!inDrawView)
+            return false;
+        
         FragmentManager fragmentManager = getFragmentManager();
         FragmentTransaction fragmentTransaction;
         switch (item.getItemId()) {
