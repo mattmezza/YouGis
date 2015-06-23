@@ -3,7 +3,7 @@
     <string name="app_name">WFSClient</string>
     <string name="action_settings">Seleziona WFS</string>
     <string name="downloadButton">Scarica</string>
-    <string name="disegnaButton">Disegna</string>
+    <string name="disegnaButton">Inizia</string>
     <string name="xml_error">Errore nel foglio XML</string>
     <string name="connection_error">Errore di connessione</string>
     <string name="action_buffer">Buffer</string>

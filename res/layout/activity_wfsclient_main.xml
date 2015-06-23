@@ -8,14 +8,16 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    tools:context=".GMLDownloadMainActivity" >
+    tools:context=".GMLDownloadMainActivity"
+    android:weightSum="1">
 
 
-
-    <WebView
-        android:id="@+id/webView1"
+    <ImageView
         android:layout_width="match_parent"
-        android:layout_height="337dp" />
+        android:layout_height="314dp"
+        android:id="@+id/imageView"
+        android:background="@drawable/bussola"
+        android:layout_weight="0.41" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -23,25 +25,11 @@
         android:gravity="center" >
 
         <Button
-            android:id="@+id/downloadButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/downloadButton"
-            android:onClick="resetConnection" />
-
-        <Button
             android:id="@+id/disegnaButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/disegnaButton" 
-            android:onClick="disegna"/>
-
-        <Button
-            android:id="@+id/aggiungiButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/aggiungiButton"
-            android:onClick="disegna" />
+            android:onClick="disegnaRequest"/>
 
     </LinearLayout>
 

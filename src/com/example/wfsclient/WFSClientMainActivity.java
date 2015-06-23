@@ -48,14 +48,13 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 	private boolean mobileConnected=false;
 	private LinkedList<Object> listaOggetti=new LinkedList<Object>();
 	private boolean disegna=false;
+    private boolean aggiorna=false;
     private boolean addLayer=false;
     private List<Layer> currentLayers;
 	private ProgressDialog progressDialog;
     private ProgressDialog dlProgressDialog;
 
-	//WFS NSIDC
-    //GOOD BUFFER: 10000
-	private String defaultwfs = "http://nsidc.org/cgi-bin/atlas_north?service=WFS&request=GetCapabilities";
+	private String defaultwfs = null;
     private Map<String, String> wfsList;
 
 	private static String wfsVersion = "1.1.0";
@@ -336,7 +335,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 		protected void onPostExecute(Boolean result) {
             if (!result)
                 return;
-			setContentView(R.layout.activity_wfsclient_main);
+
             try {
                 LOGGER.info("INVOCO LA VIEW");
                 disegnaOnView(listaOggetti, name);
@@ -425,8 +424,10 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
         @Override
         protected void onPostExecute(Layer layer) {
-            if (layer != null)
+            if (layer != null) {
                 drawView.addLayer(layer);
+                Toast.makeText(getApplicationContext(), "Buffering completato. " ,Toast.LENGTH_SHORT).show();
+            }
         }
 
         @Override
@@ -524,6 +525,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         protected void onPostExecute(Layer layer) {
             if (layer != null) {
                 drawView.addLayer(layer);
+                Toast.makeText(getApplicationContext(), "Intersezione completata." ,Toast.LENGTH_SHORT).show();
             }
         }
 
@@ -550,9 +552,10 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 	public void disegna(View view){
 		disegna=true;
         requestBoolean = false;
-        if (view.getId() == R.id.aggiungiButton || view.getId() == R.id.addLayer)
+        if (view.getId() == R.id.addLayer) {
             this.addLayer = true;
-        else
+            this.aggiorna = true;
+        } else
             this.addLayer = false;
 
 		startConnection();
@@ -571,10 +574,20 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         currentLayer.setName(name);
         this.currentLayers.add(currentLayer);
 
+        if (!this.aggiorna) {
+            initializeDrawView();
+        } else
+            this.drawView.addLayer(currentLayer);
+
+        this.inDrawView = true;
+
+	}
+
+    private void initializeDrawView() {
         setContentView(R.layout.drawing_layout);
         this.drawView = (DrawView) findViewById(R.id.drawView);
         this.drawView.setLayers(this.currentLayers);
-        this.inDrawView = true;
+
         Button addLayer = (Button) findViewById(R.id.addLayer);
         Button removeLayer = (Button) findViewById(R.id.removeLayer);
         addLayer.setOnClickListener(new View.OnClickListener() {
@@ -618,7 +631,16 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
                 }).show();
             }
         });
-	}
+    }
+
+    public void disegnaRequest(final View pView) {
+        showWFSSelector(new Runnable() {
+            @Override
+            public void run() {
+                disegna(pView);
+            }
+        });
+    }
 
     public void showFeatureSelector() {
         final String baseUrl = feature.get(0);
@@ -670,19 +692,6 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (!this.inDrawView) {
-            if (item.getItemId() == R.id.action_settings) {
-                return showWFSSelector(null);
-            }
-            return false;
-        }
-
-        final Layer layer = this.currentLayers.get(0);
-
-        LayoutInflater inflater;
-        View alertView;
-        final EditText idsText;
-
         FragmentManager fragmentManager = getFragmentManager();
         FragmentTransaction fragmentTransaction;
         switch (item.getItemId()) {
@@ -724,16 +733,6 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
     public interface ParserProgress {
         public void updateDialog(int current, int total);
-    }
-
-    private List<Geometry> getGeometriesFromLayer(Layer pLayer, String[] pIds) {
-        List<Geometry> elements = new ArrayList<Geometry>();
-        for (String part : pIds) {
-            int currentId = Integer.parseInt(part);
-            elements.add(pLayer.getGeometries().get(currentId));
-        }
-
-        return elements;
     }
 
     private void showError(final String pTitle, final String pMessage) {
