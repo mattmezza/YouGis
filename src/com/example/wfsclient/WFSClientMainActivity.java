@@ -354,6 +354,8 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
     }
 
     public void setBufferingOptions(String nameTxt, Layer selected, List<Geometry> selectedGeometries, double distance, boolean dissolve, boolean save) {
+        if(!isUniqueLayerName(nameTxt))
+            return;
         new BufferingTask().execute(
                 distance,
                 selectedGeometries,
@@ -425,11 +427,26 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         }
     }
 
+    private boolean isUniqueLayerName(String layerName) {
+        for(Layer l : this.drawView.getLayers()) {
+            if(l.getName().equals(layerName)) {
+                AlertDialog dialog = new AlertDialog.Builder(this)
+                        .setTitle("Errore")
+                        .setMessage("Specificare un nome univoco per il nuovo livello")
+                        .show();
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     public void setIntersectionOptions(String nameTxt,
                                        Layer selected1, List<Geometry> selectedGeometries1,
                                        Layer selected2, List<Geometry> selectedGeometries2,
                                        boolean save) {
+        if(!isUniqueLayerName(nameTxt))
+            return;
         new IntersectionTask().execute(nameTxt,
                 selected1, selectedGeometries1,
                 selected2, selectedGeometries2,
@@ -659,7 +676,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
             case R.id.action_Buffer:
 
                 BufferingFragment bufferingFragment = new BufferingFragment();
-                bufferingFragment.setLayers(drawView.getLayers());
+                bufferingFragment.setDrawView(drawView);
                 bufferingFragment.setBufferOptionCallback(this);
 
                 fragmentTransaction = fragmentManager.beginTransaction();
@@ -668,7 +685,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
                 return true;
             case R.id.action_Intersection:
                 IntersectionFragment intersectionFragment = new IntersectionFragment();
-                intersectionFragment.setLayers(drawView.getLayers());
+                intersectionFragment.setDrawView(drawView);
                 intersectionFragment.setBufferOptionCallback(this);
 
                 fragmentTransaction = fragmentManager.beginTransaction();

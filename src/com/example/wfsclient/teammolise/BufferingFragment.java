@@ -14,6 +14,7 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 
+import com.example.wfsclient.DrawView;
 import com.example.wfsclient.R;
 import com.example.wfsclient.layers.Layer;
 import com.vividsolutions.jts.geom.Geometry;
@@ -39,13 +40,13 @@ public class BufferingFragment extends Fragment {
     private Layer selected;
     private BufferOptionCallback callback;
 
-    private List<Layer> layers;
+    private DrawView drawView;
 
     public BufferingFragment() {
     }
 
-    public void setLayers(List<Layer> layers) {
-        this.layers = layers;
+    public void setDrawView(DrawView drawView) {
+        this.drawView = drawView;
     }
 
     public void setBufferOptionCallback(BufferOptionCallback bocb) {
@@ -63,7 +64,7 @@ public class BufferingFragment extends Fragment {
 
         name = (EditText) view.findViewById(R.id.name);
         spinner = (Spinner) view.findViewById(R.id.selectLayer);
-        ArrayAdapter<Layer> layersAdapter = new ArrayAdapter<Layer>(getActivity(), android.R.layout.simple_spinner_item, layers);
+        ArrayAdapter<Layer> layersAdapter = new ArrayAdapter<Layer>(getActivity(), android.R.layout.simple_spinner_item, drawView.getLayers());
         spinner.setAdapter(layersAdapter);
         layersAdapter.notifyDataSetChanged();
         objectsSpinner = (MultiSelectionSpinner) view.findViewById(R.id.selectGeometry);
