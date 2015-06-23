@@ -693,6 +693,9 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (!inDrawView)
+            return false;
+        
         FragmentManager fragmentManager = getFragmentManager();
         FragmentTransaction fragmentTransaction;
         switch (item.getItemId()) {
