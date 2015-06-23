@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">WFSClient</string>
+    <string name="app_name">Yougis</string>
     <string name="action_settings">Seleziona WFS</string>
     <string name="downloadButton">Scarica</string>
     <string name="disegnaButton">Inizia</string>
@@ -20,4 +20,5 @@
     <string name="aggiungiButton">Aggiungi</string>
     <string name="selectLayerIntersection">Layer di intersezione</string>
     <string name="segmentsNumberHint">Numero di segmenti (opzionale)</string>
+    <string name="welcomeText">Benvenuto in Yougis</string>
 </resources>

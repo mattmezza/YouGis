@@ -11,26 +11,49 @@
     tools:context=".GMLDownloadMainActivity"
     android:weightSum="1">
 
-
-    <ImageView
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="314dp"
-        android:id="@+id/imageView"
-        android:background="@drawable/bussola"
-        android:layout_weight="0.41" />
+        android:layout_height="match_parent">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center" >
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="314dp"
+                android:id="@+id/imageView"
+                android:layout_weight="0.41"
+                android:src="@drawable/launcher" />
 
-        <Button
-            android:id="@+id/disegnaButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/disegnaButton" 
-            android:onClick="disegnaRequest"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/welcomeText"
+                android:layout_gravity="center"
+                android:textSize="30dip"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center" >
 
-    </LinearLayout>
+                <Button
+                    android:id="@+id/disegnaButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/disegnaButton"
+                    android:textAllCaps="true"
+                    android:textColor="#ffffff"
+                    android:background="#FFFF8A16"
+                    android:minWidth="200dip"
+                    android:minHeight="60dip"
+                    android:layout_marginTop="15dip"
+                    android:onClick="disegnaRequest"/>
+
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+
 
 </LinearLayout>
