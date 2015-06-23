@@ -47,6 +47,18 @@
             android:phoneNumber="false"
             android:numeric="integer" />
 
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:ems="10"
+            android:id="@+id/segmentsNumber"
+            android:layout_weight="1"
+            android:hint="@string/segmentsNumberHint"
+            android:password="false"
+            android:phoneNumber="false"
+            android:numeric="integer" />
+
         <CheckBox
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

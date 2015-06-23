@@ -10,6 +10,6 @@ import java.util.List;
  */
 public interface BufferOptionCallback {
 
-    public void setBufferingOptions(String nameTxt, Layer selected, List<Geometry> selectedGeometries, double distance, boolean dissolve, boolean save);
+    public void setBufferingOptions(String nameTxt, Layer selected, List<Geometry> selectedGeometries, double distance, int segments, boolean dissolve, boolean save);
 
 }

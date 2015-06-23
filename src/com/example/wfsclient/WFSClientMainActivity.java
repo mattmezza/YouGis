@@ -353,14 +353,14 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
     }
 
-    public void setBufferingOptions(String nameTxt, Layer selected, List<Geometry> selectedGeometries, double distance, boolean dissolve, boolean save) {
+    public void setBufferingOptions(String nameTxt, Layer selected, List<Geometry> selectedGeometries, double distance, int segments, boolean dissolve, boolean save) {
         if(!isUniqueLayerName(nameTxt))
             return;
         new BufferingTask().execute(
                 distance,
                 selectedGeometries,
                 selected,
-                dissolve, save, nameTxt);
+                dissolve, save, nameTxt, segments);
     }
     
     private class BufferingTask extends MyAsyncTask <Object,Integer,Layer>{
@@ -371,15 +371,17 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
             List<Geometry> geometries;
             boolean save;
             boolean dissolve;
+            int segments;
             String name;
 
-            if (params[0] instanceof Double && params[1] instanceof List && params[2] instanceof Layer && params[3] instanceof Boolean && params[4] instanceof Boolean && params[5] instanceof String) {
+            if (params[0] instanceof Double && params[1] instanceof List && params[2] instanceof Layer && params[3] instanceof Boolean && params[4] instanceof Boolean && params[5] instanceof String && params[6]!=null) {
                 distance = (Double) params[0];
                 geometries = (List<Geometry>) params[1];
                 layer = (Layer) params[2];
                 save = (Boolean) params[4];
                 dissolve = (Boolean) params[3];
                 name = (String) params[5];
+                segments = (Integer) params[6];
             } else {
                 LOGGER.info("Error - incorrect parameters!");
                 return null;
@@ -396,7 +398,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
             Layer buffer;
             try {
-                buffer = layer.applyBuffer(geometries, distance, dissolve);
+                buffer = layer.applyBuffer(geometries, distance, dissolve, segments);
                 buffer.setName(name);
                 if(save) {
                     // TODO implement saving functionality

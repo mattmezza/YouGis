@@ -32,6 +32,7 @@ public class BufferingFragment extends Fragment {
     private Spinner spinner;
     private MultiSelectionSpinner objectsSpinner;
     private EditText distanceText;
+    private EditText segmentsNumber;
     private CheckBox selectAllCB;
     private CheckBox dissolveCB;
     private CheckBox saveCB;
@@ -96,6 +97,7 @@ public class BufferingFragment extends Fragment {
             }
         });
         distanceText = (EditText) view.findViewById(R.id.bufferingDistance);
+        segmentsNumber = (EditText) view.findViewById(R.id.segmentsNumber);
         dissolveCB = (CheckBox) view.findViewById(R.id.dissolve);
         saveCB = (CheckBox) view.findViewById(R.id.save);
 
@@ -124,11 +126,13 @@ public class BufferingFragment extends Fragment {
                         selectedGeometries.add(allGeometries.get(index));
                     }
                 }
+                int segments = 0;
                 double distance;
                 try {
                     distance = Double.parseDouble(distanceText.getText().toString());
+                    segments = Integer.parseInt(segmentsNumber.getText().toString());
                     if(callback!=null)
-                        callback.setBufferingOptions(nameTxt, selected, selectedGeometries, distance, dissolveCB.isChecked(), saveCB.isSelected());
+                        callback.setBufferingOptions(nameTxt, selected, selectedGeometries, distance, segments, dissolveCB.isChecked(), saveCB.isSelected());
                 } catch(NumberFormatException e) {
                     AlertDialog dialog = new AlertDialog.Builder(getActivity())
                             .setTitle("Attenzione")
