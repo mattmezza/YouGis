@@ -80,6 +80,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         wfsList.put("Torino - Cartografia", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc01_dati_di_base?service=WFS&request=getCapabilities");
         wfsList.put("Torino - Farmacie", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc102_farmacie?service=WFS&request=getCapabilities");
         wfsList.put("Torino - ASL", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc106_sedi_asl?service=WFS&request=getCapabilities");
+        wfsList.put("Torino - zone censuarie", "http://geomap.reteunitaria.piemonte.it/ws/siccms/coto-01/wfsg01/wfs_sicc18_microzone_censuarie?service=WFS&request=getCapabilities");
 
     }
 
