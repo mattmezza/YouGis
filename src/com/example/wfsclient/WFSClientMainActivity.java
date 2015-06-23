@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.logging.Logger;
 
 import com.example.wfsclient.layers.Layer;
@@ -397,7 +398,12 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
                 buffer = layer.applyBuffer(geometries, distance, dissolve);
                 buffer.setName(name);
                 if(save) {
-                    // TODO implement saving functionality
+                    try {
+                        buffer.save(buffer.getName() + new Random().nextInt(100));
+                    } catch (IOException e) {
+                        showError("Attenzione", "Non è stato possibile salvare il file.");
+                        e.printStackTrace();
+                    }
                 }
             } catch (InterruptedException e) {
                 return null;
@@ -485,7 +491,12 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
             intersection.setName(layerName);
             if(save) {
-                // TODO implement saving functionality
+                try {
+                    intersection.save(intersection.getName() + new Random().nextInt(100));
+                } catch (IOException e) {
+                    showError("Attenzione", "Non è stato possibile salvare il file.");
+                    e.printStackTrace();
+                }
             }
             return intersection;
         }

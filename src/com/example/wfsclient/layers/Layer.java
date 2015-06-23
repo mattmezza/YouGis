@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.RadialGradient;
+import android.os.Environment;
 import android.util.Log;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -138,21 +139,26 @@ public class Layer {
             this.listener = new VoidListener();
     }
 
-    public String save(String fileName, Activity activity) throws IOException {
-        GMLWriter writer = new GMLWriter("EPSG:32661");
+    public void save(String fileName) throws IOException {
+        GMLWriter writer = new GMLWriter("EPSG:3003");
         String serialized = writer.write(this);
+
+        String realFileName = fileName.replaceAll(" ", "_").replaceAll("[^A-Za-z_]", "");
 
         FileOutputStream outputStream;
 
+        File file = new File(Environment.getExternalStorageDirectory(), "WFSClient/"+realFileName+".gml");
+        file.getParentFile().mkdirs();
+        file.createNewFile();
         try {
-            outputStream = activity.openFileOutput(fileName, Context.MODE_PRIVATE);
+            outputStream = new FileOutputStream(file);
             outputStream.write(serialized.getBytes());
             outputStream.close();
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        return null;
     }
 
     @Override
