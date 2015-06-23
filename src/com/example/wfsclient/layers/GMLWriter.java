@@ -148,8 +148,15 @@ public class GMLWriter {
     }
 
     private String writeBound(Geometry pGeometry) {
-        Coordinate upperLeft = pGeometry.getCoordinates()[0];
-        Coordinate lowerRight = pGeometry.getCoordinates()[3];
+        Coordinate[] coordinates = pGeometry.getCoordinates();
+        Coordinate upperLeft;
+        Coordinate lowerRight;
+        upperLeft = coordinates[0];
+        if (coordinates.length > 3)
+            lowerRight = coordinates[3];
+        else
+            lowerRight = coordinates[0];
+
         return "<gml:boundedBy>\n" +
                 "<gml:Envelope srsName=\"" + this.refer + "\">\n" +
                 "<gml:lowerCorner>" + lowerRight.x + " " + lowerRight.y + "</gml:lowerCorner>\n" +

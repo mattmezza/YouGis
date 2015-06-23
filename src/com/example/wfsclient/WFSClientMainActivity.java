@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 import com.example.wfsclient.layers.Layer;
 import com.example.wfsclient.teammolise.BufferOptionCallback;
 import com.example.wfsclient.teammolise.BufferingFragment;
+import com.example.wfsclient.teammolise.InfoFragment;
 import com.example.wfsclient.teammolise.IntersectionFragment;
 import com.example.wfsclient.teammolise.IntersectionOptionCallback;
 import com.vividsolutions.jts.geom.Geometry;
@@ -591,6 +592,8 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
         Button addLayer = (Button) findViewById(R.id.addLayer);
         Button removeLayer = (Button) findViewById(R.id.removeLayer);
+        Button infoLayer = (Button) findViewById(R.id.infoLayer);
+
         addLayer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View v) {
@@ -630,6 +633,18 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
                         }
                     }
                 }).show();
+            }
+        });
+
+        infoLayer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                InfoFragment infoFragment = new InfoFragment();
+                infoFragment.setLayers(drawView.getLayers());
+
+                FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
+                fragmentTransaction.add(R.id.fragmentContainer, infoFragment, "INFO_FRAGMENT");
+                fragmentTransaction.commit();
             }
         });
     }
@@ -681,7 +696,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         builder.setItems(items, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int item) {
                 defaultwfs = wfsList.get(items[item]);
-                Toast.makeText(getApplicationContext(), "Selezionato il WFS "+items[item], Toast.LENGTH_SHORT).show();
+                //Toast.makeText(getApplicationContext(), "Selezionato il WFS "+items[item], Toast.LENGTH_SHORT).show();
                 if(runnable!=null)
                     runOnUiThread(runnable);
             }

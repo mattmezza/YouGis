@@ -69,7 +69,10 @@ public class MultiSelectionSpinner  extends Spinner implements
             _items = items;
             mSelection = new boolean[_items.length];
             simple_adapter.clear();
-            simple_adapter.add(_items[0]);
+            if (_items.length > 0)
+                simple_adapter.add(_items[0]);
+            else
+                simple_adapter.add("No item");
             Arrays.fill(mSelection, false);
         }
 
