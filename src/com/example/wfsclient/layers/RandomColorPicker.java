@@ -51,7 +51,7 @@ public class RandomColorPicker {
     private static double distance(Integer[] color1) {
         double totDistance = 0;
         for (Integer[] color : usedColors) {
-            totDistance += Math.pow(baseDistance(color, color1), 2.0);
+            totDistance += baseDistance(color, color1);
         }
 
         return totDistance;
