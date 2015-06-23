@@ -106,7 +106,9 @@ public class Layer {
         List<Geometry> result = new ArrayList<Geometry>();
 
         for (Geometry geometry : pGeometries1) {
-            result.add(geometry.intersection(intersectionGeometry));
+            Geometry intersection = geometry.intersection(intersectionGeometry);
+            if (!intersection.isEmpty())
+                result.add(geometry.intersection(intersectionGeometry));
         }
 
         return new Layer(result);

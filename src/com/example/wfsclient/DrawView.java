@@ -229,6 +229,8 @@ public class DrawView extends View {
     private void drawLinearRing(LinearRing o, Canvas canvas, Paint paint) {
         int n = o.getNumPoints();
         int k = 0;
+        if (n == 0)
+            return;
         int arraySize=(n-1)*4;
         float[] ptn = new float [arraySize];
         for(int i=0;i<arraySize;i=i+4){
@@ -279,6 +281,8 @@ public class DrawView extends View {
         float [] ptn=null;
         int k=0;
         n=line.getNumPoints();
+        if (n == 0)
+            return;
         int arraySize=(n-1)*4;
         ptn = new float [arraySize];
         for(int i=0;i<arraySize;i=i+4){

@@ -41,9 +41,6 @@ public class BufferingFragment extends Fragment {
 
     private List<Layer> layers;
 
-    private static final String LAYERS_KEY = "LAYERS_KEY";
-
-
     public BufferingFragment() {
     }
 
@@ -126,7 +123,7 @@ public class BufferingFragment extends Fragment {
                         selectedGeometries.add(allGeometries.get(index));
                     }
                 }
-                double distance = 0d;
+                double distance;
                 try {
                     distance = Double.parseDouble(distanceText.getText().toString());
                     if(callback!=null)

@@ -15,6 +15,8 @@ import java.util.logging.Logger;
 import com.example.wfsclient.layers.Layer;
 import com.example.wfsclient.teammolise.BufferOptionCallback;
 import com.example.wfsclient.teammolise.BufferingFragment;
+import com.example.wfsclient.teammolise.IntersectionFragment;
+import com.example.wfsclient.teammolise.IntersectionOptionCallback;
 import com.example.wfsclient.teammolise.MultiSelectionSpinner;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
@@ -41,7 +43,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-public class WFSClientMainActivity extends Activity implements BufferOptionCallback {
+public class WFSClientMainActivity extends Activity implements BufferOptionCallback, IntersectionOptionCallback {
 
 	private final static Logger LOGGER = Logger.getLogger(WFSClientMainActivity.class.getName());
 	
@@ -170,7 +172,9 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 		startConnection();
 	}
 
-	/**
+
+
+    /**
 	 * Classe asincrona per la connesione al WFS. Ha il compito di scaricare le capabilities del WFS.
 	 *
 	 */
@@ -424,36 +428,39 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         }
     }
 
+    @Override
+    public void setIntersectionOptions(String nameTxt,
+                                       Layer selected1, List<Geometry> selectedGeometries1,
+                                       Layer selected2, List<Geometry> selectedGeometries2,
+                                       boolean save) {
+        new IntersectionTask().execute(nameTxt,
+                selected1, selectedGeometries1,
+                selected2, selectedGeometries2,
+                save);
+    }
+
     private class IntersectionTask extends MyAsyncTask <Object,Integer,Layer>{
-        private Layer layer;
         @Override
         protected Layer doInBackground(Object... params) {
-            String idsText;
+            String layerName;
+            Layer selected1;
+            Layer selected2;
+            List<Geometry> selectedGeometries1;
+            List<Geometry> selectedGeometries2;
+            boolean save;
 
-            if (params[0] instanceof String && params[1] instanceof Layer) {
-                idsText = (String) params[0];
-                layer = (Layer) params[1];
+            if (params[0] instanceof String &&
+                    params[1] instanceof Layer && params[2] instanceof List &&
+                    params[3] instanceof Layer && params[4] instanceof List &&
+                    params[5] instanceof Boolean) {
+                layerName = (String)params[0];
+                selected1 = (Layer)params[1];
+                selectedGeometries1 = (List<Geometry>)params[2];
+                selected2 = (Layer)params[3];
+                selectedGeometries2 = (List<Geometry>)params[4];
+                save = (Boolean)params[5];
             } else {
                 LOGGER.info("Error - incorrect parameters!");
-                return null;
-            }
-
-            String[] parts = idsText.split(",");
-            List<Geometry> elements;
-            try {
-                elements = getGeometriesFromLayer(layer, parts);
-            } catch (NumberFormatException e) {
-                showError("Errore", "Errore nel formato della lista di ID");
-                return null;
-            } catch (ArrayIndexOutOfBoundsException e) {
-                showError("Errore", "ID non validi (fuori dal range)");
-                return null;
-            } catch (IndexOutOfBoundsException e) {
-                showError("Errore", "ID non validi (fuori dal range)");
-                return null;
-            } catch (Exception e) {
-                showError("Error", "Errore sconosciuto. Controllare il log per ulteriori dettagli");
-                e.printStackTrace();
                 return null;
             }
 
@@ -461,14 +468,13 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
                 @Override
                 public void run() {
                     opProgressDialog.setMessage("Intersezione in corso...");
-
                     opProgressDialog.show();
                 }
             });
 
             Layer intersection;
             try {
-                intersection = layer.applyIntersection(elements, new ArrayList<Geometry>());
+                intersection = selected1.applyIntersection(selectedGeometries1, selectedGeometries2);
             } catch (InterruptedException e) {
                 return null;
             }
@@ -480,9 +486,10 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
                 }
             });
 
-            for (Geometry toRemove : elements)
-                layer.removeGeometry(toRemove);
-
+            intersection.setName(layerName);
+            if(save) {
+                // TODO implement saving functionality
+            }
             return intersection;
         }
 
@@ -593,71 +600,34 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
             return false;
         }
 
-        //Creates the alert box
-        AlertDialog.Builder alert = new AlertDialog.Builder(this);
-
-        //Adds a "Cancel" button
-        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-            }
-        });
-
         final Layer layer = this.currentLayers.get(0);
 
         LayoutInflater inflater;
         View alertView;
         final EditText idsText;
 
+        FragmentManager fragmentManager = getFragmentManager();
+        FragmentTransaction fragmentTransaction;
         switch (item.getItemId()) {
             case R.id.action_Buffer:
-                alert.setTitle("Buffering (da 0 a " + (layer.getGeometries().size()-1) +")");
 
-//                //Sets the layout
-//                inflater = this.getLayoutInflater();
-//                alertView = inflater.inflate(R.layout.dialog_buffering, null);
-//                alert.setView(alertView);
-//
-//                idsText = (EditText)alertView.findViewById(R.id.bufferingIds);
-//                final EditText distanceText = (EditText)alertView.findViewById(R.id.bufferingDistance);
-//
-//                alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-//                    public void onClick(DialogInterface dialog, int whichButton) {
-//                        new BufferingTask().execute(
-//                                distanceText.getText().toString(),
-//                                idsText.getText().toString(),
-//                                layer);
-//                    }
-//                });
-//
-//                alert.show();
                 BufferingFragment bufferingFragment = new BufferingFragment();
                 bufferingFragment.setLayers(drawView.getLayers());
                 bufferingFragment.setBufferOptionCallback(this);
 
-                FragmentManager fragmentManager = getFragmentManager();
-                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                fragmentTransaction = fragmentManager.beginTransaction();
                 fragmentTransaction.add(R.id.fragmentContainer, bufferingFragment, "BUFFERING_FRAGMENT");
                 fragmentTransaction.commit();
                 return true;
             case R.id.action_Intersection:
-                alert.setTitle("Intersezione (da 0 a " + (layer.getGeometries().size()-1) +")");
+                IntersectionFragment intersectionFragment = new IntersectionFragment();
+                intersectionFragment.setLayers(drawView.getLayers());
+                intersectionFragment.setBufferOptionCallback(this);
 
-                //Sets the layout
-                inflater = this.getLayoutInflater();
-                alertView = inflater.inflate(R.layout.dialog_intersect, null);
-                alert.setView(alertView);
+                fragmentTransaction = fragmentManager.beginTransaction();
+                fragmentTransaction.add(R.id.fragmentContainer, intersectionFragment, "INTERSECTION_FRAGMENT");
+                fragmentTransaction.commit();
 
-                idsText = (EditText)alertView.findViewById(R.id.intersectIds);
-
-                alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        new IntersectionTask().execute(
-                                idsText.getText().toString(),
-                                layer);
-                    }
-                });
-
-                alert.show();
                 return true;
             default:
                 return false;

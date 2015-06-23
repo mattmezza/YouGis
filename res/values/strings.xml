@@ -18,4 +18,5 @@
     <string name="selectSecondLayer">Seleziona il secondo layer</string>
     <string name="selectFirstLayer">Seleziona il primo layer</string>
     <string name="aggiungiButton">Aggiungi</string>
+    <string name="selectLayerIntersection">Layer di intersezione</string>
 </resources>
