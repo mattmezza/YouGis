@@ -1,5 +1,7 @@
 package com.example.wfsclient.layers;
 
+import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
 import android.graphics.RadialGradient;
 import android.util.Log;
@@ -136,7 +138,20 @@ public class Layer {
             this.listener = new VoidListener();
     }
 
-    public byte[] save(URL url) throws IOException {
+    public String save(String fileName, Activity activity) throws IOException {
+        GMLWriter writer = new GMLWriter("EPSG:32661");
+        String serialized = writer.write(this);
+
+        FileOutputStream outputStream;
+
+        try {
+            outputStream = activity.openFileOutput(fileName, Context.MODE_PRIVATE);
+            outputStream.write(serialized.getBytes());
+            outputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return null;
     }
 
