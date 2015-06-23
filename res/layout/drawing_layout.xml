@@ -9,9 +9,44 @@
         android:layout_height="wrap_content"
         android:id="@+id/fragmentContainer"></LinearLayout>
 
-    <view
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        class="com.example.wfsclient.DrawView"
-        android:id="@+id/drawView" />
+        android:layout_height="fill_parent">
+
+        <view
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            class="com.example.wfsclient.DrawView"
+            android:id="@+id/drawView" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/btnContainer"
+            android:gravity="center"
+            android:baselineAligned="false"
+            android:layout_gravity="bottom">
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/addLayer"
+                android:minHeight="0dp"
+                android:minWidth="30dp"
+                android:gravity="center"
+                android:background="#00000000"
+                android:text="➕" />
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/removeLayer"
+                android:minHeight="0dp"
+                android:minWidth="30dp"
+                android:gravity="center"
+                android:background="#00000000"
+                android:text="➖" />
+        </LinearLayout>
+
+    </FrameLayout>
+
 </LinearLayout>
