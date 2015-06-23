@@ -80,6 +80,13 @@ public class DrawView extends View {
         this.postInvalidate();
     }
 
+    public boolean removeLayer(Layer pLayer) {
+        boolean res = this.layers.remove(pLayer);
+        if(res)
+            this.postInvalidate();
+        return res;
+    }
+
     public List<Layer> getLayers() {
         return layers;
     }

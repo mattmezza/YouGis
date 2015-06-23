@@ -17,7 +17,6 @@ import com.example.wfsclient.teammolise.BufferOptionCallback;
 import com.example.wfsclient.teammolise.BufferingFragment;
 import com.example.wfsclient.teammolise.IntersectionFragment;
 import com.example.wfsclient.teammolise.IntersectionOptionCallback;
-import com.example.wfsclient.teammolise.MultiSelectionSpinner;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 
@@ -36,11 +35,8 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
+import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 public class WFSClientMainActivity extends Activity implements BufferOptionCallback, IntersectionOptionCallback {
@@ -523,7 +519,8 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 	/**Flag per distinguere quale bottone � stato utilizzato*/
 	public void disegna(View view){
 		disegna=true;
-        if (view.getId() == R.id.aggiungiButton)
+        requestBoolean = false;
+        if (view.getId() == R.id.aggiungiButton || view.getId() == R.id.addLayer)
             this.addLayer = true;
         else
             this.addLayer = false;
@@ -533,7 +530,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
 	/**Invoca la View per disegnare la Feature*/
 	public void disegnaOnView(LinkedList<Object> l, String name) throws ParseException{
-        Layer currentLayer = new Layer();
+        final Layer currentLayer = new Layer();
         for (Object o : l)
             if (o instanceof Geometry)
                 currentLayer.addGeometry((Geometry)o);
@@ -548,6 +545,49 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         this.drawView = (DrawView) findViewById(R.id.drawView);
         this.drawView.setLayers(this.currentLayers);
         this.inDrawView = true;
+        Button addLayer = (Button) findViewById(R.id.addLayer);
+        Button removeLayer = (Button) findViewById(R.id.removeLayer);
+        addLayer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(final View v) {
+                requestBoolean = false;
+                showWFSSelector(new Runnable() {
+                    @Override
+                    public void run() {
+                        disegna(v);
+                    }
+                });
+            }
+        });
+        final Activity act = this;
+        removeLayer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(drawView.getLayers().size()<=1) {
+                    Toast.makeText(act, "Non puoi rimuovere l'ultimo layer", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                final String[] options = new String[drawView.getLayers().size()];
+                for (int i = 0; i < drawView.getLayers().size(); i++)
+                    options[i] = drawView.getLayers().get(i).getName();
+                AlertDialog.Builder builder = new AlertDialog.Builder(act);
+                builder.setTitle("Seleziona un layer");
+                builder.setItems(options, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int item) {
+                        String name = options[item];
+                        List<Layer> tempLayers = new ArrayList<Layer>(drawView.getLayers());
+                        for(Layer l : tempLayers) {
+                            if(l.getName().equals(name)&&drawView.getLayers().size()>1) {
+                                if(drawView.removeLayer(l))
+                                    Toast.makeText(act, "Layer "+name+" rimosso con successo!", Toast.LENGTH_SHORT).show();
+                                else
+                                    Toast.makeText(act, "Non è possibile rimuovere il layer "+name+"...", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+                }).show();
+            }
+        });
 	}
 
     public void showFeatureSelector() {
@@ -574,29 +614,35 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         }).show();
     }
 
+    private boolean showWFSSelector(final Runnable runnable) {
+        final String[] items = new String[wfsList.keySet().size()];
+
+        int i = 0;
+        for (String currentSelectionItem : wfsList.keySet()) {
+            items[i] = currentSelectionItem;
+            i++;
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select a WFS");
+        builder.setItems(items, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int item) {
+                defaultwfs = wfsList.get(items[item]);
+                Toast.makeText(getApplicationContext(), "Selezionato il WFS "+items[item], Toast.LENGTH_SHORT).show();
+                if(runnable!=null)
+                    runOnUiThread(runnable);
+            }
+        }).show();
+
+        return true;
+    }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (!this.inDrawView) {
             if (item.getItemId() == R.id.action_settings) {
-                final String[] items = new String[wfsList.keySet().size()];
-
-                int i = 0;
-                for (String currentSelectionItem : wfsList.keySet()) {
-                    items[i] = currentSelectionItem;
-                    i++;
-                }
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Select a WFS");
-                builder.setItems(items, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int item) {
-                        defaultwfs = wfsList.get(items[item]);
-                        Toast.makeText(getApplicationContext(), "Selezionato il WFS "+items[item], Toast.LENGTH_SHORT).show();
-                    }
-                }).show();
-
-                return true;
+                return showWFSSelector(null);
             }
             return false;
         }
