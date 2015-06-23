@@ -130,9 +130,12 @@ public class BufferingFragment extends Fragment {
                 double distance;
                 try {
                     distance = Double.parseDouble(distanceText.getText().toString());
-                    segments = Integer.parseInt(segmentsNumber.getText().toString());
+                    if (segmentsNumber.getText().toString().isEmpty())
+                        segments = 8;
+                    else
+                        segments = Integer.parseInt(segmentsNumber.getText().toString());
                     if(callback!=null)
-                        callback.setBufferingOptions(nameTxt, selected, selectedGeometries, distance, dissolveCB.isChecked(), saveCB.isChecked());
+                        callback.setBufferingOptions(nameTxt, selected, selectedGeometries, distance, segments, dissolveCB.isChecked(), saveCB.isChecked());
                 } catch(NumberFormatException e) {
                     AlertDialog dialog = new AlertDialog.Builder(getActivity())
                             .setTitle("Attenzione")
