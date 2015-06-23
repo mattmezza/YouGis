@@ -63,8 +63,7 @@ public class Layer {
         this.geometries = pGeometries;
         this.listener = new VoidListener();
 
-        Random random = new Random();
-        this.color = Color.rgb(random.nextInt(256), random.nextInt(256), random.nextInt(256));
+        this.color = RandomColorPicker.getColor();
     }
 
     public Layer() {
@@ -82,20 +81,40 @@ public class Layer {
     }
 
     public Layer applyBuffer(List<Geometry> pGeometries, final double pDistance, final boolean pDissolve) throws InterruptedException {
+        return this.applyBuffer(pGeometries, pDistance, pDissolve, 8);
+    }
+
+    public Layer applyBuffer(List<Geometry> pGeometries, final double pDistance, final boolean pDissolve, final int segments) throws InterruptedException {
         if (pGeometries.size() == 0)
             return new Layer();
         List<Geometry> result = new ArrayList<Geometry>();
 
+        for (Geometry geometry : pGeometries)
+            result.add(geometry.buffer(pDistance, segments));
+
         if (pDissolve) {
-            Geometry currentGeometry = pGeometries.get(0);
+            List<Geometry> realResult = new ArrayList<Geometry>(result);
 
-            for (int i = 1; i < pGeometries.size(); i++)
-                currentGeometry = currentGeometry.union(pGeometries.get(i));
+            boolean isIntersectionOccurred;
+            do {
+                Log.d("Loop", "Looping again...");
+                isIntersectionOccurred = false;
+                for (int i = 0; i < result.size(); i++) {
+                    for (int j = i + 1; j < result.size(); j++) {
+                        Geometry geometry1 = result.get(i);
+                        Geometry geometry2 = result.get(j);
 
-            result.add(currentGeometry.buffer(pDistance));
-        } else {
-            for (Geometry geometry : pGeometries)
-                result.add(geometry.buffer(pDistance));
+                        if (geometry1.intersects(geometry2)) {
+                            realResult.add(geometry1.union(geometry2));
+                            realResult.remove(geometry1);
+                            realResult.remove(geometry2);
+                            isIntersectionOccurred = true;
+                        }
+                    }
+
+                    result = new ArrayList<Geometry>(realResult);
+                }
+            } while (isIntersectionOccurred);
         }
 
         return new Layer(result);

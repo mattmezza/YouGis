@@ -8,8 +8,6 @@ import com.vividsolutions.jts.geom.LinearRing;
 import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.io.WKTReader;
-import com.vividsolutions.jts.io.WKTWriter;
 
 /**
  * Created by simone on 23/06/15.
@@ -142,8 +140,8 @@ public class GMLWriter {
         String result = "";
 
         Coordinate[] coordinates = geometry.getCoordinates();
-        for (int i = 0; i < coordinates.length; i++) {
-            result += coordinates[i].x + " " + coordinates[i].y + " ";
+        for (Coordinate coordinate : coordinates) {
+            result += coordinate.x + " " + coordinate.y + " ";
         }
 
         return result;
