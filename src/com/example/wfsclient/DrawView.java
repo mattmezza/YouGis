@@ -211,6 +211,14 @@ public class DrawView extends View {
             canvas.drawPath(polygonPath, paint);
         }
 
+        int color = paint.getColor();
+        paint.setColor(Color.BLACK);
+        this.drawLineString(o.getExteriorRing(), canvas, paint);
+        for(int i=0;i<n;i++){
+            this.drawLineString(o.getInteriorRingN(i), canvas, paint);
+        }
+        paint.setColor(color);
+
         paint.setStyle(Paint.Style.STROKE);
     }
 

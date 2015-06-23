@@ -80,22 +80,22 @@ public class XMLParserDraw {
 						currentTag++;
 						if(progressDelegate!=null)
 							progressDelegate.updateDialog(currentTag, this.totalTags);
-						if(name.equals("gml:Point")){
+						if(name.equalsIgnoreCase("gml:Point")){
 							this.nextTag();
 							name=parser.getName();
-							if(name.equals("gml:pos")){//CONTROLLA LA READ
+							if(name.equalsIgnoreCase("gml:pos")){//CONTROLLA LA READ
 								coordinate=parser.nextText();
 								g1= new WKTReader().read("POINT("+coordinate+")");
 								l.add(g1);
 							}
 						}
-						else if(name.equals("ms:NAME")){
+						else if(name.equalsIgnoreCase("ms:NAME")){
 							Object userData = parser.nextText();
 							g1=(Geometry)l.removeLast();
 							g1.setUserData(userData);
 							l.add(g1);
 						}
-						else if(name.equals("gml:LineString")){
+						else if(name.equalsIgnoreCase("gml:LineString")){
 							event = this.nextTag();
 							name=parser.getName();
 							if(name.equals("gml:posList")){//AGGIUNGERE CONTROLLO SULL' ATTR
@@ -105,7 +105,7 @@ public class XMLParserDraw {
 								l.add(g1);
 							}
 						}
-						else if(name.equals("gml:LinearRing")){
+						else if(name.equalsIgnoreCase("gml:LinearRing")){
 							event=this.nextTag();
 							name=parser.getName();
 							if(name.equals("gml:posList")){//AGGIUNGERE CONTROLLO SULL' ATTR
@@ -115,19 +115,20 @@ public class XMLParserDraw {
 								l.add(g1);
 							}
 						}
-						else if(name.equals("gml:polygon")){
+						else if(name.equalsIgnoreCase("gml:polygon")){
 							event=this.nextTag();
 							name=parser.getName();
-							if(name.equals("gml:outerBoundaryIs")){
+							if(name.equalsIgnoreCase("gml:outerBoundaryIs") || name.equalsIgnoreCase("gml:exterior")){
 								event=this.nextTag();
 								name=parser.getName();
-								if(name.equals("gml:LinearRing")){
+								if(name.equalsIgnoreCase("gml:LinearRing")){
 									event=this.nextTag();
 									name=parser.getName();
-									if(name.equals("gml:posList")){
+									if(name.equalsIgnoreCase("gml:posList")){
 										coordinate=parser.nextText();
 										stringaWKT=convertiStringaPosList(coordinate);
 										g1= new WKTReader().read("POLYGON (("+stringaWKT+"))");
+                                        l.add(g1);
 									}
 								}
 							}
