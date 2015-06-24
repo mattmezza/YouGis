@@ -10,7 +10,7 @@
     <string name="action_buffer">Buffer</string>
     <string name="action_intersection">Intersezione</string>
     <string name="selectLayer">Seleziona il layer</string>
-    <string name="selectAll">Seleziona tutti</string>
+    <string name="selectAll">Seleziona singoli elementi</string>
     <string name="distanceHint">Distanza (in metri)</string>
     <string name="dissolve">Dissolvi</string>
     <string name="name">Nome nuovo layer</string>

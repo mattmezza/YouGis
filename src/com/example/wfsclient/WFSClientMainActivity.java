@@ -39,6 +39,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 public class WFSClientMainActivity extends Activity implements BufferOptionCallback, IntersectionOptionCallback {
@@ -592,7 +593,8 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
         Button addLayer = (Button) findViewById(R.id.addLayer);
         Button removeLayer = (Button) findViewById(R.id.removeLayer);
-        Button infoLayer = (Button) findViewById(R.id.infoLayer);
+        ImageView infoLayer = (ImageView) findViewById(R.id.infoLayer);
+        ImageView operationLayer = (ImageView) findViewById(R.id.operations);
 
         addLayer.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -647,6 +649,13 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
                 fragmentTransaction.commit();
             }
         });
+
+        operationLayer.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openOptionsMenu();
+            }
+        });
     }
 
     public void disegnaRequest(final View pView) {
@@ -667,7 +676,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
             options[i-1] = feature.get(i);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Selezionare una feature");
+        builder.setTitle("Selezionare un livello (tema)");
         builder.setItems(options, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int item) {
                 request = baseUrl +

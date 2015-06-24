@@ -12,50 +12,128 @@
         android:layout_gravity="center"
         android:gravity="center_horizontal">
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="INPUT"
+            android:id="@+id/textView5"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:weightSum="1">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tema 1"
+                android:id="@+id/textView"
+                android:layout_gravity="center_vertical|right" />
+
+            <Spinner
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/selectLayer1"
+                android:prompt="@string/selectLayer"></Spinner>
+
+        </LinearLayout>
+
+        <CheckBox
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/selectAll"
+            android:id="@+id/selectAllObjects1"
+            android:checked="false" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:visibility="gone"
+            android:id="@+id/singleGeometriesLayer1">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dati:  "
+                android:id="@+id/textView2" />
+
+            <com.example.wfsclient.teammolise.MultiSelectionSpinner
+                android:id="@+id/selectGeometry1"
+                android:layout_width="316dp"
+                android:layout_height="match_parent"
+                android:visibility="visible" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tema 2"
+                android:id="@+id/textView3"
+                android:layout_gravity="center_vertical|right" />
+
+            <Spinner
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/selectLayer2"
+                android:prompt="@string/selectLayer"></Spinner>
+
+        </LinearLayout>
+
+        <CheckBox
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/selectAll"
+            android:id="@+id/selectAllObjects2"
+            android:checked="false" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:visibility="gone"
+            android:id="@+id/singleGeometriesLayer2">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dati:  "
+                android:id="@+id/textView4" />
+
+            <com.example.wfsclient.teammolise.MultiSelectionSpinner
+                android:id="@+id/selectGeometry2"
+                android:layout_width="316dp"
+                android:layout_height="match_parent"
+                android:visibility="visible" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="OUTPUT"
+            android:id="@+id/textView6"
+            android:textStyle="bold" />
+
+        <CheckBox
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/save"
+            android:text="@string/save"
+            android:checked="true" />
+
         <EditText
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/name"
             android:hint="@string/name"
             android:singleLine="true"/>
-
-        <Spinner
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/selectLayer1"
-            android:prompt="@string/selectLayer"></Spinner>
-
-        <com.example.wfsclient.teammolise.MultiSelectionSpinner
-            android:id="@+id/selectGeometry1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-        <CheckBox
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/selectAll"
-            android:id="@+id/selectAllObjects1" />
-
-        <Spinner
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/selectLayer2"
-            android:prompt="@string/selectLayerIntersection"></Spinner>
-
-        <com.example.wfsclient.teammolise.MultiSelectionSpinner
-            android:id="@+id/selectGeometry2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-        <CheckBox
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/selectAll"
-            android:id="@+id/selectAllObjects2" />
-
-        <CheckBox
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/save"
-            android:text="@string/save" />
     </LinearLayout>
 
     <LinearLayout
