@@ -5,6 +5,13 @@
     android:orientation="vertical"
     android:gravity="center_horizontal">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="INPUT"
+        android:id="@+id/textView7"
+        android:textStyle="bold" />
+
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
@@ -12,28 +19,59 @@
         android:layout_gravity="center"
         android:gravity="center_horizontal">
 
-        <EditText
+        <LinearLayout
+            android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/name"
-            android:hint="@string/name"
-            android:singleLine="true"/>
+            android:layout_height="wrap_content">
 
-        <Spinner
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/selectLayer"
-            android:prompt="@string/selectLayer"></Spinner>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tema"
+                android:id="@+id/textView"
+                android:layout_gravity="center_vertical|right" />
 
-        <com.example.wfsclient.teammolise.MultiSelectionSpinner
-            android:id="@+id/selectGeometry"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
+            <Spinner
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/selectLayer"
+                android:prompt="@string/selectLayer"></Spinner>
+
+        </LinearLayout>
+
         <CheckBox
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/selectAll"
-            android:id="@+id/selectAllObjects" />
+            android:id="@+id/selectAllObjects"
+            android:checked="false" />
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="32dp"
+            android:visibility="gone"
+            android:id="@+id/singleGeometriesLayer">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dati:  "
+                android:id="@+id/textView2" />
+
+            <com.example.wfsclient.teammolise.MultiSelectionSpinner
+                android:id="@+id/selectGeometry"
+                android:layout_width="316dp"
+                android:layout_height="match_parent"
+                android:visibility="visible" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PARAMETRI"
+            android:id="@+id/textView8"
+            android:textStyle="bold" />
 
         <EditText
             android:layout_width="match_parent"
@@ -64,11 +102,29 @@
             android:layout_height="wrap_content"
             android:id="@+id/dissolve"
             android:text="@string/dissolve" />
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="OUTPUT"
+            android:id="@+id/textView9"
+            android:textStyle="bold" />
+
         <CheckBox
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/save"
-            android:text="@string/save" />
+            android:text="@string/save"
+            android:checked="true" />
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/name"
+            android:hint="@string/name"
+            android:singleLine="true"/>
+
     </LinearLayout>
 
     <LinearLayout

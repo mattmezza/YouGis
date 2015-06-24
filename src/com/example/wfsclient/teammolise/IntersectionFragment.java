@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 
 import com.example.wfsclient.DrawView;
@@ -32,11 +33,13 @@ public class IntersectionFragment extends Fragment {
     private EditText name;
     private Spinner spinner1;
     private MultiSelectionSpinner objectsSpinner1;
-    private CheckBox selectAllCB1;
+    private CheckBox selectSpecificGeometriesCB1;
+    private LinearLayout singleGeometriesLayout1;
 
     private Spinner spinner2;
     private MultiSelectionSpinner objectsSpinner2;
-    private CheckBox selectAllCB2;
+    private CheckBox selectSpecificGeometriesCB2;
+    private LinearLayout singleGeometriesLayout2;
 
     private CheckBox saveCB;
     private Button okBtn;
@@ -84,8 +87,11 @@ public class IntersectionFragment extends Fragment {
         objectsSpinner1 = (MultiSelectionSpinner) view.findViewById(R.id.selectGeometry1);
         objectsSpinner2 = (MultiSelectionSpinner) view.findViewById(R.id.selectGeometry2);
 
-        selectAllCB1 = (CheckBox) view.findViewById(R.id.selectAllObjects1);
-        selectAllCB2 = (CheckBox) view.findViewById(R.id.selectAllObjects2);
+        selectSpecificGeometriesCB1 = (CheckBox) view.findViewById(R.id.selectAllObjects1);
+        selectSpecificGeometriesCB2 = (CheckBox) view.findViewById(R.id.selectAllObjects2);
+
+        singleGeometriesLayout1 = (LinearLayout) view.findViewById(R.id.singleGeometriesLayer1);
+        singleGeometriesLayout2 = (LinearLayout) view.findViewById(R.id.singleGeometriesLayer2);
 
         spinner1.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -98,13 +104,11 @@ public class IntersectionFragment extends Fragment {
                 }
                 objectsSpinner1.setItems(ids);
                 objectsSpinner1.setEnabled(true);
-                selectAllCB1.setEnabled(true);
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 objectsSpinner1.setEnabled(false);
-                selectAllCB1.setEnabled(false);
             }
         });
 
@@ -119,26 +123,30 @@ public class IntersectionFragment extends Fragment {
                 }
                 objectsSpinner2.setItems(ids);
                 objectsSpinner2.setEnabled(true);
-                selectAllCB2.setEnabled(true);
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 objectsSpinner2.setEnabled(false);
-                selectAllCB2.setEnabled(false);
             }
         });
 
-        selectAllCB1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        selectSpecificGeometriesCB1.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                objectsSpinner1.setEnabled(!isChecked);
+                if (isChecked)
+                    singleGeometriesLayout1.setVisibility(View.VISIBLE);
+                else
+                    singleGeometriesLayout1.setVisibility(View.GONE);
             }
         });
-        selectAllCB2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        selectSpecificGeometriesCB2.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                objectsSpinner2.setEnabled(!isChecked);
+                if (isChecked)
+                    singleGeometriesLayout2.setVisibility(View.VISIBLE);
+                else
+                    singleGeometriesLayout2.setVisibility(View.GONE);
             }
         });
 
@@ -153,15 +161,15 @@ public class IntersectionFragment extends Fragment {
             public void onClick(View v) {
                 String nameTxt = name.getText().toString();
                 if (nameTxt.length()<2) {
-                    AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                    new AlertDialog.Builder(getActivity())
                             .setTitle("Attenzione")
                             .setMessage("Inserisci un nome per il nuovo layer (almeno due caratteri).")
                             .show();
                     return;
                 }
 
-                List<Geometry> selectedGeometries1 = getGeometries(objectsSpinner1, selected1, selectAllCB1.isChecked());
-                List<Geometry> selectedGeometries2 = getGeometries(objectsSpinner2, selected2, selectAllCB2.isChecked());
+                List<Geometry> selectedGeometries1 = getGeometries(objectsSpinner1, selected1, !selectSpecificGeometriesCB1.isChecked());
+                List<Geometry> selectedGeometries2 = getGeometries(objectsSpinner2, selected2, !selectSpecificGeometriesCB2.isChecked());
 
                 if(callback!=null)
                     callback.setIntersectionOptions(nameTxt,

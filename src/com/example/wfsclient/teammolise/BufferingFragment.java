@@ -12,6 +12,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 
 import com.example.wfsclient.DrawView;
@@ -33,13 +34,15 @@ public class BufferingFragment extends Fragment {
     private MultiSelectionSpinner objectsSpinner;
     private EditText distanceText;
     private EditText segmentsNumber;
-    private CheckBox selectAllCB;
+    private CheckBox selectSpecificGeometries;
     private CheckBox dissolveCB;
     private CheckBox saveCB;
     private Button okBtn;
     private Button closeBtn;
     private Layer selected;
     private BufferOptionCallback callback;
+
+    private LinearLayout singleGeometriesLayout;
 
     private DrawView drawView;
 
@@ -69,7 +72,10 @@ public class BufferingFragment extends Fragment {
         spinner.setAdapter(layersAdapter);
         layersAdapter.notifyDataSetChanged();
         objectsSpinner = (MultiSelectionSpinner) view.findViewById(R.id.selectGeometry);
-        selectAllCB = (CheckBox) view.findViewById(R.id.selectAllObjects);
+
+        selectSpecificGeometries = (CheckBox) view.findViewById(R.id.selectAllObjects);
+        singleGeometriesLayout = (LinearLayout) view.findViewById(R.id.singleGeometriesLayer);
+
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -81,21 +87,23 @@ public class BufferingFragment extends Fragment {
                 }
                 objectsSpinner.setItems(ids);
                 objectsSpinner.setEnabled(true);
-                selectAllCB.setEnabled(true);
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
                 objectsSpinner.setEnabled(false);
-                selectAllCB.setEnabled(false);
             }
         });
-        selectAllCB.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        selectSpecificGeometries.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                objectsSpinner.setEnabled(!isChecked);
+                if (isChecked)
+                    singleGeometriesLayout.setVisibility(View.VISIBLE);
+                else
+                    singleGeometriesLayout.setVisibility(View.GONE);
             }
         });
+
         distanceText = (EditText) view.findViewById(R.id.bufferingDistance);
         segmentsNumber = (EditText) view.findViewById(R.id.segmentsNumber);
         dissolveCB = (CheckBox) view.findViewById(R.id.dissolve);
@@ -119,14 +127,14 @@ public class BufferingFragment extends Fragment {
                 List<Integer> selectedGeometryIndices = objectsSpinner.getSelectedIndicies();
                 List<Geometry> selectedGeometries = new ArrayList<Geometry>();
                 List<Geometry> allGeometries = selected.getGeometries();
-                if(selectAllCB.isChecked()) {
+                if(!selectSpecificGeometries.isChecked()) {
                     selectedGeometries.addAll(allGeometries);
                 } else {
                     for (int index : selectedGeometryIndices) {
                         selectedGeometries.add(allGeometries.get(index));
                     }
                 }
-                int segments = 0;
+                int segments;
                 double distance;
                 try {
                     distance = Double.parseDouble(distanceText.getText().toString());
@@ -137,7 +145,7 @@ public class BufferingFragment extends Fragment {
                     if(callback!=null)
                         callback.setBufferingOptions(nameTxt, selected, selectedGeometries, distance, segments, dissolveCB.isChecked(), saveCB.isChecked());
                 } catch(NumberFormatException e) {
-                    AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                    new AlertDialog.Builder(getActivity())
                             .setTitle("Attenzione")
                             .setMessage("Il formato della distanza non è corretto.")
                             .show();
