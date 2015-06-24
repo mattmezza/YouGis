@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="15dip">
+<TextView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:textSize="24dp"
+    android:textStyle="bold"
+    android:id="@+id/wfsName"
+    android:text="Nome WFS"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textStyle="italic"
+        android:id="@+id/wfsUrl"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:text="http://un.urlrldiprova.per/laprof+cosi?la=capisce"/>
+</LinearLayout>

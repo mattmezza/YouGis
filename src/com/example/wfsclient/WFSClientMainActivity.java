@@ -19,11 +19,13 @@ import com.example.wfsclient.teammolise.BufferingFragment;
 import com.example.wfsclient.teammolise.InfoFragment;
 import com.example.wfsclient.teammolise.IntersectionFragment;
 import com.example.wfsclient.teammolise.IntersectionOptionCallback;
+import com.example.wfsclient.teammolise.ManageWFSFragment;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.app.ProgressDialog;
@@ -32,6 +34,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.content.Context;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -39,6 +42,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ScrollView;
 import android.widget.Toast;
 
 public class WFSClientMainActivity extends Activity implements BufferOptionCallback, IntersectionOptionCallback {
@@ -66,6 +70,8 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
     private boolean inDrawView;
     private DrawView drawView;
     private ProgressDialog opProgressDialog;
+
+    private Button manageWFSBtn;
 
     private void createMenuEntries() {
         wfsList = new HashMap<String, String>();
@@ -114,6 +120,21 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         this.opProgressDialog.setIndeterminate(true);
 
         this.currentLayers = new ArrayList<Layer>();
+        this.manageWFSBtn = (Button) findViewById(R.id.wfsManagementBtn);
+        this.manageWFSBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ManageWFSFragment fragment = new ManageWFSFragment();
+                ScrollView scrollView = (ScrollView) findViewById(R.id.scrollView);
+                fragment.setScrollView(scrollView);
+                FragmentManager fm = getFragmentManager();
+                FragmentTransaction transaction = fm.beginTransaction();
+                transaction.add(R.id.fragmentContainer, fragment);
+                transaction.commit();
+                scrollView.setVisibility(View.GONE);
+                Log.d("Matt", "fragment sostituito");
+            }
+        });
 	}
 
 	@Override
@@ -610,7 +631,7 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
         removeLayer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(drawView.getLayers().size()<=1) {
+                if (drawView.getLayers().size() <= 1) {
                     Toast.makeText(act, "Non puoi rimuovere l'ultimo layer", Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -623,12 +644,12 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
                     public void onClick(DialogInterface dialog, int item) {
                         String name = options[item];
                         List<Layer> tempLayers = new ArrayList<Layer>(drawView.getLayers());
-                        for(Layer l : tempLayers) {
-                            if(l.getName().equals(name)&&drawView.getLayers().size()>1) {
-                                if(drawView.removeLayer(l))
-                                    Toast.makeText(act, "Layer "+name+" rimosso con successo!", Toast.LENGTH_SHORT).show();
+                        for (Layer l : tempLayers) {
+                            if (l.getName().equals(name) && drawView.getLayers().size() > 1) {
+                                if (drawView.removeLayer(l))
+                                    Toast.makeText(act, "Layer " + name + " rimosso con successo!", Toast.LENGTH_SHORT).show();
                                 else
-                                    Toast.makeText(act, "Non è possibile rimuovere il layer "+name+"...", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(act, "Non è possibile rimuovere il layer " + name + "...", Toast.LENGTH_SHORT).show();
                             }
                         }
                     }
@@ -741,11 +762,16 @@ public class WFSClientMainActivity extends Activity implements BufferOptionCallb
 
     @Override
     public void onBackPressed() {
+        ManageWFSFragment manageWFSFragment = (ManageWFSFragment) getFragmentManager().findFragmentById(R.id.fragmentContainer);
+
         if (this.inDrawView) {
             setContentView(R.layout.activity_wfsclient_main);
             this.inDrawView = false;
             this.drawView = null;
             this.requestBoolean = false;
+        } else if(manageWFSFragment != null && manageWFSFragment.isVisible()) {
+            getFragmentManager().beginTransaction().remove(manageWFSFragment).commit();
+            ((ScrollView) findViewById(R.id.scrollView)).setVisibility(View.VISIBLE);
         } else
             super.onBackPressed();
     }
